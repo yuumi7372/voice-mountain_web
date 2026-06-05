@@ -1,0 +1,13 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(
+        180deg,
+        #f8fbff 0%,
+        #e8f5ec 55%,
+        #d9efc7 100%
+    );
+    padding: 24px;
+}

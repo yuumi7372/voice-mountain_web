@@ -2,6 +2,7 @@
 "use client";
 
 import styles from "./page.module.css"
+import background from "../components/background.module.css";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
@@ -31,37 +32,39 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className={styles.title}>
-            コエカタマウンテン
-          </h1>
-          <button className={styles.createMountainButton} onClick={gotoCreateMountainPage}>
+    <main className={background.container}>
+      <div className={styles.wrapper}>
+        <header className={styles.header}>
+          <div>
+            <p className={styles.label}>VOICE MOUNTAIN</p>
+            <h1 className={styles.title}>コエカタマウンテン</h1>
+            <p className={styles.subtitle}>
+              声から生まれた山フィールドを眺めよう
+            </p>
+          </div>
+
+          <button
+            className={styles.createMountainButton}
+            onClick={gotoCreateMountainPage}
+          >
             + 山を作る
           </button>
-        </div>
+        </header>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <section className={styles.grid}>
           {mountains.map((mountain) => (
-            <div
-              key={mountain.id}
-              className="overflow-hidden rounded-2xl bg-white shadow transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="aspect-video bg-gray-200" />
-
-              <div className="p-4">
-                <h2 className="mb-2 text-xl font-bold">
-                  {mountain.title}
-                </h2>
-
-                <p className="text-sm text-gray-600">
-                  🤖 {mountain.comment}
-                </p>
+            <article key={mountain.id} className={styles.card}>
+              <div className={styles.imageArea}>
+                <span className={styles.mountainIcon}>⛰️</span>
               </div>
-            </div>
+
+              <div className={styles.cardBody}>
+                <h2 className={styles.cardTitle}>{mountain.title}</h2>
+                <p className={styles.comment}>🤖 {mountain.comment}</p>
+              </div>
+            </article>
           ))}
-        </div>
+        </section>
       </div>
     </main>
   );
