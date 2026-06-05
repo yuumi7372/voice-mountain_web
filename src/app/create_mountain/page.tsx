@@ -2,9 +2,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreateMountain() {
     const [isRecording, setIsRecording] = useState(false);
+    const router = useRouter();
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
@@ -128,6 +130,20 @@ export default function CreateMountain() {
         }
     }
 
+    function createMountain() {
+        localStorage.setItem(
+            "waveData",
+            JSON.stringify(waveDataRef.current)
+        );
+
+        localStorage.setItem(
+            "pitchData",
+            JSON.stringify(pitchDataRef.current)
+        );
+
+        router.push("/result");
+    }
+
     return (
         <div>
             <button onClick={startRecording}>
@@ -138,7 +154,7 @@ export default function CreateMountain() {
                 録音停止
             </button>
 
-            <button>
+            <button onClick={createMountain}>
                 create
             </button>
         </div>
