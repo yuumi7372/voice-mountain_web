@@ -1,0 +1,14 @@
+/* ./page.module.css */
+.title{
+    font-family: "WDXL Lubrifont JP N", sans-serif;
+    font-size: 2.25rem;
+}
+.createMountainButton{
+    background-color: #facc15;
+    padding: 12px 24px;
+    font-weight: bold;
+    border-radius: 12px;
+    box-shadow:
+        0 1px 3px rgba(0,0,0,0.1),
+        0 1px 2px rgba(0,0,0,0.06);
+}
