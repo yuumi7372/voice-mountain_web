@@ -1,13 +1,115 @@
 /* ./page.module.css */
-.title{
-    font-family: "WDXL Lubrifont JP N", sans-serif;
+.wrapper {
+    width: 100%;
+    max-width: 1120px;
 }
-.createMountainButton{
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: #6f9b6b;
+    font-weight: 800;
+}
+
+.title {
+    margin: 0;
+    font-family: "WDXL Lubrifont JP N", sans-serif;
+    font-size: 44px;
+    color: #2f4f35;
+}
+
+.subtitle {
+    margin: 8px 0 0;
+    color: #607566;
+    font-size: 15px;
+}
+
+.createMountainButton {
+    border: none;
     background-color: #facc15;
-    padding: 12px 24px;
+    color: #4d3b00;
+    padding: 14px 24px;
     font-weight: bold;
-    border-radius: 12px;
-    box-shadow:
-        0 1px 3px rgba(0,0,0,0.1),
-        0 1px 2px rgba(0,0,0,0.06);
+    border-radius: 999px;
+    box-shadow: 0 10px 22px rgba(250, 204, 21, 0.35);
+    cursor: pointer;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.card {
+    overflow: hidden;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 18px 40px rgba(80, 120, 90, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 48px rgba(80, 120, 90, 0.25);
+}
+
+.imageArea {
+    height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+        180deg,
+        #cfefff 0%,
+        #e7f6d5 100%
+    );
+}
+
+.mountainIcon {
+    font-size: 64px;
+}
+
+.cardBody {
+    padding: 20px;
+}
+
+.cardTitle {
+    margin: 0 0 8px;
+    font-size: 22px;
+    color: #2f4f35;
+}
+
+.comment {
+    margin: 0;
+    font-size: 14px;
+    color: #607566;
+}
+
+@media (max-width: 800px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .title {
+        font-size: 36px;
+    }
+
+    .createMountainButton {
+        width: 100%;
+    }
 }

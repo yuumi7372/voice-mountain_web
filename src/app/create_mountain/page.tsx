@@ -3,6 +3,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import styles from "./page.module.css"
+import background from "../../components/background.module.css";
 
 export default function CreateMountain() {
     const [isRecording, setIsRecording] = useState(false);
@@ -18,7 +20,12 @@ export default function CreateMountain() {
 
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    const [visualData, setVisualData] = useState<number[]>([]);
+    const [recordingProgress, setRecordingProgress] = useState(0);
+
     async function startRecording() {
+        setVisualData([]);
+        setRecordingProgress(0);
         waveDataRef.current = [];
         pitchDataRef.current = [];
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -27,9 +34,7 @@ export default function CreateMountain() {
 
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
-        const source = audioContext.createMediaStreamSource(
-            stream
-        );
+        const source = audioContext.createMediaStreamSource(stream);
 
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
@@ -37,15 +42,6 @@ export default function CreateMountain() {
         analyserRef.current = analyser;
         
         const recorder = new MediaRecorder(stream);
-
-        recorder.onstop = () => {
-
-            console.log("waveData");
-            console.log(waveDataRef.current);
-
-            console.log("pitchData");
-            console.log(pitchDataRef.current);
-        };
 
         recorder.start();
 
@@ -74,7 +70,18 @@ export default function CreateMountain() {
                     Math.abs(timeData[i] - 128)
                 );
             }
-            waveDataRef.current.push(volume);
+            const normalizedVolume = volume / 128;
+
+            waveDataRef.current.push(normalizedVolume);
+
+            setVisualData((prev) => {
+                const next = [...prev, normalizedVolume];
+                return next.slice(-50);
+            });
+
+            setRecordingProgress(
+                Math.min(waveDataRef.current.length / 50, 1)
+            );
 
             // -----------------
             // 周波数取得
@@ -84,9 +91,7 @@ export default function CreateMountain() {
                 analyser.frequencyBinCount
             );
 
-            analyser.getByteFrequencyData(
-                freqData
-            );
+            analyser.getByteFrequencyData(freqData);
 
             let maxIndex = 0;
 
@@ -104,11 +109,25 @@ export default function CreateMountain() {
                 audioContextRef.current!.sampleRate /
                 analyser.fftSize;
 
-            pitchDataRef.current.push(
-                dominantFrequency
-            );
+            pitchDataRef.current.push(dominantFrequency);
 
+            const mountainData = {
+                waveData: waveDataRef.current,
+                pitchData: pitchDataRef.current,
+            };
 
+            recorder.onstop = () => {
+
+                console.log("waveData");
+                console.log(waveDataRef.current);
+
+                console.log("pitchData");
+                console.log(pitchDataRef.current);
+
+                console.log(
+                    JSON.stringify(mountainData)
+                );
+            };
         }, 100);
 
         mediaRecorderRef.current = recorder;
@@ -141,22 +160,90 @@ export default function CreateMountain() {
             JSON.stringify(pitchDataRef.current)
         );
 
-        router.push("/result");
+        router.push("/mountain");
     }
 
     return (
-        <div>
-            <button onClick={startRecording}>
-                録音開始
-            </button>
+        <main className={background.container}>
+            <section className={styles.card}>
+                <p className={styles.label}>VOICE MOUNTAIN</p>
 
-            <button onClick={stopRecording}>
-                録音停止
-            </button>
+                <h1 className={styles.title}>
+                    声で山をつくる
+                </h1>
 
-            <button onClick={createMountain}>
-                create
-            </button>
-        </div>
+                <p className={styles.description}>
+                    5秒間声を録音すると、音量と高さから
+                    あなただけの山フィールドを生成します。
+                </p>
+
+                <div className={styles.statusBox}>
+                    <div
+                        className={styles.statusDot}
+                        style={{
+                            backgroundColor: isRecording ? "#ff5a5a" : "#d9d9d9",
+                        }}
+                    />
+
+                    <span className={styles.statusText}>
+                        {isRecording ? "録音中..." : "録音待機中"}
+                    </span>
+                </div>
+
+                <div className={styles.visualizer}>
+                    {Array.from({ length: 50 }).map((_, index) => {
+                        const value = visualData[index] ?? 0;
+
+                        return (
+                            <div
+                                key={index}
+                                className={styles.visualBar}
+                                style={{
+                                    height: `${8 + value * 70}px`,
+                                    opacity: isRecording || value > 0 ? 1 : 0.25,
+                                }}
+                            />
+                        );
+                    })}
+                </div>
+
+                <div className={styles.progressTrack}>
+                    <div
+                        className={styles.progressBar}
+                        style={{
+                            width: `${recordingProgress * 100}%`,
+                        }}
+                    />
+                </div>
+
+                <div className={styles.buttonArea}>
+                    <button
+                        onClick={startRecording}
+                        disabled={isRecording}
+                        className={`${styles.button} ${styles.primaryButton}`}
+                    >
+                        録音開始
+                    </button>
+
+                    <button
+                        onClick={stopRecording}
+                        disabled={!isRecording}
+                        className={`${styles.button} ${styles.secondaryButton}`}
+                        style={{
+                            opacity: !isRecording ? 0.5 : 1,
+                        }}
+                    >
+                        録音停止
+                    </button>
+                </div>
+
+                <button
+                    onClick={createMountain}
+                    className={`${styles.button} ${styles.createButton}`}
+                >
+                    山を生成する
+                </button>
+            </section>
+        </main>
     );
 }
