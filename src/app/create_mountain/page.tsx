@@ -46,7 +46,17 @@ export default function CreateMountain() {
         source.connect(analyser);
         analyserRef.current = analyser;
         
-        const recorder = new MediaRecorder(stream);
+        const mimeType =
+            MediaRecorder.isTypeSupported("audio/mp4")
+                ? "audio/mp4"
+                : MediaRecorder.isTypeSupported("audio/webm")
+                    ? "audio/webm"
+                    : "";
+
+        const recorder = new MediaRecorder(
+            stream,
+            mimeType ? { mimeType } : undefined
+        );
 
         recorder.ondataavailable = (event) => {
             chunksRef.current.push(event.data);
@@ -54,7 +64,7 @@ export default function CreateMountain() {
 
         recorder.onstop = () => {
             const audioBlob = new Blob(chunksRef.current, {
-                type: "audio/webm",
+                type: recorder.mimeType,
             });
 
             const url = URL.createObjectURL(audioBlob);
@@ -264,6 +274,7 @@ export default function CreateMountain() {
                 {audioUrl && (
                     <audio
                         controls
+                        preload="metadata"
                         src={audioUrl}
                     />
                 )}
