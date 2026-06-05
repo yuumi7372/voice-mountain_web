@@ -1,0 +1,44 @@
+/* ./mountain/preview/page.module.css */
+.container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(
+        180deg,
+        #f8fbff 0%,
+        #e8f5ec 55%,
+        #d9efc7 100%
+    );
+    overflow: hidden;
+}
+.unity {
+    width: 100%;
+    height: 100vh;
+}
+
+.postButton {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+
+    z-index: 10;
+
+    padding: 14px 22px;
+
+    border: none;
+    border-radius: 999px;
+
+    background-color: #facc15;
+
+    font-weight: bold;
+    cursor: pointer;
+
+    box-shadow:
+        0 8px 20px rgba(0, 0, 0, 0.2);
+
+    transition: 0.2s;
+}
+
+.postButton:hover {
+    transform: translateY(-2px);
+}

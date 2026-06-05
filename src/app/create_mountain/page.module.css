@@ -19,10 +19,10 @@
 }
 
 .title {
+    font-family: "WDXL Lubrifont JP N", sans-serif;
     margin: 12px 0 14px;
     font-size: 32px;
     color: #2f4f35;
-    font-weight: 800;
 }
 
 .description {
