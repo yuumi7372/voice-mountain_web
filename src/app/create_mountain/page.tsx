@@ -23,7 +23,12 @@ export default function CreateMountain() {
     const [visualData, setVisualData] = useState<number[]>([]);
     const [recordingProgress, setRecordingProgress] = useState(0);
 
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const chunksRef = useRef<Blob[]>([]);
+
     async function startRecording() {
+        setAudioUrl(null);
+        chunksRef.current = [];
         setVisualData([]);
         setRecordingProgress(0);
         waveDataRef.current = [];
@@ -37,12 +42,41 @@ export default function CreateMountain() {
         const source = audioContext.createMediaStreamSource(stream);
 
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
+        analyser.fftSize = 2048;
         source.connect(analyser);
         analyserRef.current = analyser;
         
         const recorder = new MediaRecorder(stream);
 
+        recorder.ondataavailable = (event) => {
+            chunksRef.current.push(event.data);
+        };
+
+        recorder.onstop = () => {
+            const audioBlob = new Blob(chunksRef.current, {
+                type: "audio/webm",
+            });
+
+            const url = URL.createObjectURL(audioBlob);
+            setAudioUrl(url);
+
+            const reader = new FileReader();
+
+            reader.onloadend = () => {
+                localStorage.setItem(
+                    "audioData",
+                    reader.result as string
+                );
+            };
+
+            reader.readAsDataURL(audioBlob);
+
+            console.log("waveData");
+            console.log(waveDataRef.current);
+
+            console.log("pitchData");
+            console.log(pitchDataRef.current);
+        };
         recorder.start();
 
         intervalRef.current = setInterval(() => {
@@ -93,41 +127,31 @@ export default function CreateMountain() {
 
             analyser.getByteFrequencyData(freqData);
 
-            let maxIndex = 0;
+            const sampleRate = audioContextRef.current!.sampleRate;
 
-            for (let i = 1; i < freqData.length; i++) {
-                if (
-                    freqData[i] >
-                    freqData[maxIndex]
-                ) {
-                    maxIndex = i;
+            const minFreq = 80;
+            const maxFreq = 1200;
+
+            const minIndex = Math.floor(minFreq * analyser.fftSize / sampleRate);
+
+            const maxIndex = Math.floor(maxFreq * analyser.fftSize / sampleRate);
+
+            let strongestIndex = minIndex;
+            let strongestValue = 0;
+
+            for (let i = minIndex; i <= maxIndex; i++) {
+                if (freqData[i] > strongestValue) {
+                    strongestValue = freqData[i];
+                    strongestIndex = i;
                 }
             }
 
             const dominantFrequency =
-                maxIndex *
-                audioContextRef.current!.sampleRate /
+                strongestIndex *
+                sampleRate /
                 analyser.fftSize;
 
             pitchDataRef.current.push(dominantFrequency);
-
-            const mountainData = {
-                waveData: waveDataRef.current,
-                pitchData: pitchDataRef.current,
-            };
-
-            recorder.onstop = () => {
-
-                console.log("waveData");
-                console.log(waveDataRef.current);
-
-                console.log("pitchData");
-                console.log(pitchDataRef.current);
-
-                console.log(
-                    JSON.stringify(mountainData)
-                );
-            };
         }, 100);
 
         mediaRecorderRef.current = recorder;
@@ -160,13 +184,13 @@ export default function CreateMountain() {
             JSON.stringify(pitchDataRef.current)
         );
 
-        router.push("/mountain");
+        router.push("/create_mountain/result");
     }
 
     return (
         <main className={background.container}>
             <section className={styles.card}>
-                <p className={styles.label}>VOICE MOUNTAIN</p>
+                <p className={styles.label}>CREATE MOUNTAIN</p>
 
                 <h1 className={styles.title}>
                     声で山をつくる
@@ -236,6 +260,13 @@ export default function CreateMountain() {
                         録音停止
                     </button>
                 </div>
+
+                {audioUrl && (
+                    <audio
+                        controls
+                        src={audioUrl}
+                    />
+                )}
 
                 <button
                     onClick={createMountain}

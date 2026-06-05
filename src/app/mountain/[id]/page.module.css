@@ -1,0 +1,177 @@
+/* ./mountain/[id]/page.module.css */
+.card {
+    width: 100%;
+    max-width: 980px;
+    padding: 32px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 20px 50px rgba(80, 120, 90, 0.22);
+}
+
+.backButton {
+    border: none;
+    background: rgba(255, 255, 255, 0.8);
+    color: #607566;
+    font-weight: 800;
+    margin-bottom: 24px;
+    cursor: pointer;
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 28px;
+    align-items: stretch;
+}
+
+.previewArea {
+    min-width: 0;
+}
+
+.thumbnail,
+.emptyThumbnail {
+    width: 100%;
+    height: 420px;
+    border-radius: 28px;
+    background-color: #edf3ea;
+}
+
+.thumbnail {
+    object-fit: contain;
+}
+
+.emptyThumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #607566;
+}
+
+.infoArea {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 28px;
+    border-radius: 28px;
+    background: rgba(243, 247, 240, 0.75);
+}
+
+.label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: #6f9b6b;
+    font-weight: 800;
+}
+
+.title {
+    font-family: "WDXL Lubrifont JP N", sans-serif;
+    margin: 0 0 22px;
+    font-size: 38px;
+    color: #2f4f35;
+}
+
+.aiReview {
+    padding: 20px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #f8fbff, #eef8ff);
+    border: 2px solid #dcefff;
+    margin-bottom: 18px;
+}
+
+.aiHeader {
+    font-size: 13px;
+    font-weight: 800;
+    color: #4d7db1;
+    margin-bottom: 8px;
+}
+
+.aiTitle {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 900;
+    color: #2f4f35;
+}
+
+.aiComment {
+    margin: 0;
+    line-height: 1.7;
+    color: #607566;
+}
+
+.commentBox {
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.commentLabel {
+    margin: 0 0 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #6f9b6b;
+}
+
+.comment {
+    margin: 0;
+    line-height: 1.7;
+    color: #405848;
+}
+
+.deleteButton {
+    margin-top: 24px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 12px;
+    background-color: #ff6b6b;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.deleteButton:hover {
+    opacity: 0.85;
+}
+
+.audioBox {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+.audioLabel {
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #6f9b6b;
+}
+
+.audioPlayer {
+    width: 100%;
+}
+
+@media (max-width: 800px) {
+    .card {
+        max-width: 460px;
+        padding: 28px;
+    }
+
+    .content {
+        grid-template-columns: 1fr;
+    }
+
+    .thumbnail,
+    .emptyThumbnail {
+        height: 260px;
+    }
+
+    .infoArea {
+        padding: 0;
+        background: transparent;
+    }
+
+    .title {
+        font-size: 32px;
+    }
+}
