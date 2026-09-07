@@ -9,6 +9,7 @@ import background from "../../components/background.module.css";
 export default function CreateMountain() {
     const [isRecording, setIsRecording] = useState(false);
     const router = useRouter();
+    const streamRef = useRef<MediaStream | null>(null);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
@@ -36,6 +37,8 @@ export default function CreateMountain() {
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
         });
+
+        streamRef.current = stream;
 
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
@@ -137,7 +140,7 @@ export default function CreateMountain() {
 
             analyser.getByteFrequencyData(freqData);
 
-            const sampleRate = audioContextRef.current!.sampleRate;
+            const sampleRate = audioContext.sampleRate;
 
             const minFreq = 80;
             const maxFreq = 1200;
@@ -174,13 +177,28 @@ export default function CreateMountain() {
     }
 
     function stopRecording() {
-        mediaRecorderRef.current?.stop();
-        setIsRecording(false);
+        //インターバルをクリアして録音を停止する
         if (intervalRef.current) {
-            clearInterval(
-                intervalRef.current
-            );
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
         }
+
+        // MediaRecorderを停止する
+        mediaRecorderRef.current?.stop();
+
+        //マイクを停止する
+        streamRef.current?.getTracks().forEach((track) => {
+            track.stop();
+        });
+
+        streamRef.current = null;
+
+        //AudioContextを閉じる
+        audioContextRef.current?.close();
+        audioContextRef.current = null;
+
+        //UIを録音終了状態に更新する
+        setIsRecording(false);
     }
 
     function createMountain() {
