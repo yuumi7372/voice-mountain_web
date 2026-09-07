@@ -2,115 +2,200 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Grid } from "@react-three/drei";
+import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 
-type MountainProps = {
-    waveData: number[];
-};
+function Mountain() {
+    const [waveData, setWaveData] = useState<number[]>([]);
+    const [pitchData, setPitchData] = useState<number[]>([]);
 
-function Mountain({ waveData }: MountainProps) {
-    const width = 12;
-    const depth = 5;
-    const heightMultiplier = 5;
+    useEffect(() => {
+        const savedWaveData = localStorage.getItem("waveData");
+        const savedPitchData = localStorage.getItem("pitchData");
 
-    const segments = Math.max(waveData.length, 2);
-
-    const vertices: number[] = [];
-    const indices: number[] = [];
-
-    // 横方向 × 奥行き方向の格子を作る
-    const depthSegments = 20;
-
-    for (let x = 0; x < segments; x++) {
-        const waveIndex = x;
-        const value = waveData[waveIndex] ?? 0;
-
-        const xPosition =
-            (x / (segments - 1) - 0.5) * width;
-
-        // 波形から山の高さを決める
-        const mountainHeight = value * heightMultiplier;
-
-        for (let z = 0; z <= depthSegments; z++) {
-            const depthRatio = z / depthSegments;
-
-            const zPosition =
-                (depthRatio - 0.5) * depth;
-
-            // 中央が高く、端に行くほど低くする
-            const centerFactor =
-                1 - Math.abs(depthRatio - 0.5) * 2;
-
-            const height =
-                mountainHeight * centerFactor;
-
-            vertices.push(
-                xPosition,
-                height,
-                zPosition
-            );
+        if (savedWaveData) {
+            setWaveData(JSON.parse(savedWaveData));
         }
-    }
 
-    // 格子状に面を作る
-    for (let x = 0; x < segments - 1; x++) {
-        for (let z = 0; z < depthSegments; z++) {
-            const current =
-                x * (depthSegments + 1) + z;
-
-            const next =
-                (x + 1) * (depthSegments + 1) + z;
-
-            indices.push(
-                current,
-                next,
-                current + 1
-            );
-
-            indices.push(
-                next,
-                next + 1,
-                current + 1
-            );
+        if (savedPitchData) {
+            setPitchData(JSON.parse(savedPitchData));
         }
-    }
+    }, []);
 
-    const geometry = new THREE.BufferGeometry();
+    const geometry = useMemo(() => {
+        // -------------------------
+        // 音声データから値を取り出す
+        // -------------------------
 
-    geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(
-            vertices,
-            3
-        )
-    );
+        const maxVolume =
+            waveData.length > 0
+                ? Math.max(...waveData)
+                : 0.5;
 
-    geometry.setIndex(indices);
+        const validPitchData = pitchData.filter(
+            (pitch) => pitch > 0
+        );
 
-    geometry.computeVertexNormals();
+        const highestPitch =
+            validPitchData.length > 0
+                ? Math.max(...validPitchData)
+                : 400;
+
+        // -------------------------
+        // 山のパラメータ
+        // -------------------------
+
+        // 想定する声の高さ
+        const minPitch = 80;
+        const maxPitch = 1200;
+
+        // 0〜1に正規化
+        const pitchNormalized = THREE.MathUtils.clamp(
+            (highestPitch - minPitch) /
+                (maxPitch - minPitch),
+            0,
+            1
+        );
+
+        // 最高音 → 山頂の高さ
+        const mountainHeight =
+            THREE.MathUtils.lerp(
+                2,
+                10,
+                pitchNormalized
+            );
+
+        // 音量 → 山の幅
+        const mountainRadius =
+            THREE.MathUtils.lerp(
+                3,
+                8,
+                maxVolume
+            );
+
+        // -------------------------
+        // 山のメッシュを作る
+        // -------------------------
+
+        const segments = 80;
+
+        const positions: number[] = [];
+        const indices: number[] = [];
+
+        const verticesPerSide = segments + 1;
+
+        for (let z = 0; z <= segments; z++) {
+            for (let x = 0; x <= segments; x++) {
+
+                // -1〜1
+                const normalizedX =
+                    (x / segments) * 2 - 1;
+
+                const normalizedZ =
+                    (z / segments) * 2 - 1;
+
+                // 実際の座標
+                const worldX =
+                    normalizedX * mountainRadius;
+
+                const worldZ =
+                    normalizedZ * mountainRadius;
+
+                // 中心からの距離
+                const distance = Math.sqrt(
+                    normalizedX * normalizedX +
+                    normalizedZ * normalizedZ
+                );
+
+                // -------------------------
+                // 山の形
+                // -------------------------
+
+                const t = Math.max(0, 1 - distance);
+
+                // 山頂付近を尖らせる
+                const peak = Math.pow(t, 3.0);
+
+                // 裾野はかなり長くする
+                const base = Math.pow(t, 0.55);
+
+                const falloff =
+                    peak * 0.85 +
+                    base * 0.15;
+
+                const y = mountainHeight * falloff;
+
+                positions.push(
+                    worldX,
+                    y,
+                    worldZ
+                );
+            }
+        }
+
+        // -------------------------
+        // 三角形を作る
+        // -------------------------
+
+        for (let z = 0; z < segments; z++) {
+            for (let x = 0; x < segments; x++) {
+
+                const a =
+                    z * verticesPerSide + x;
+
+                const b = a + 1;
+
+                const c =
+                    a + verticesPerSide;
+
+                const d = c + 1;
+
+                indices.push(
+                    a,
+                    c,
+                    b,
+
+                    b,
+                    c,
+                    d
+                );
+            }
+        }
+
+        const geometry =
+            new THREE.BufferGeometry();
+
+        geometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(
+                positions,
+                3
+            )
+        );
+
+        geometry.setIndex(indices);
+
+        geometry.computeVertexNormals();
+
+        return geometry;
+    }, [waveData, pitchData]);
 
     return (
         <mesh geometry={geometry}>
             <meshStandardMaterial
                 side={THREE.DoubleSide}
+                roughness={1}
             />
         </mesh>
     );
 }
 
 export default function MountainCanvas() {
-    const waveData =
-        typeof window !== "undefined"
-            ? JSON.parse(
-                localStorage.getItem("waveData") ?? "[]"
-            )
-            : [];
-
     return (
         <Canvas
             camera={{
-                position: [0, 4, 12],
+                position: [0, 7, 14],
                 fov: 50,
             }}
             gl={{
@@ -124,7 +209,18 @@ export default function MountainCanvas() {
                 intensity={2}
             />
 
-            <Mountain waveData={waveData} />
+            <Mountain />
+
+            {/* 方眼紙っぽい地面 */}
+            <Grid
+                args={[30, 30]}
+                cellSize={1}
+                cellThickness={0.5}
+                sectionSize={5}
+                sectionThickness={1}
+                fadeDistance={40}
+                fadeStrength={1}
+            />
 
             <OrbitControls />
         </Canvas>
