@@ -3,6 +3,8 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { MediaRecorder, register } from "extendable-media-recorder";
+import { connect } from "extendable-media-recorder-wav-encoder";
 import styles from "./page.module.css"
 import background from "../../components/background.module.css";
 
@@ -11,7 +13,7 @@ export default function CreateMountain() {
     const router = useRouter();
     const streamRef = useRef<MediaStream | null>(null);
 
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const mediaRecorderRef = useRef<any>(null);
 
     const waveDataRef = useRef<number[]>([]);
     const pitchDataRef = useRef<number[]>([]);
@@ -34,6 +36,9 @@ export default function CreateMountain() {
         setRecordingProgress(0);
         waveDataRef.current = [];
         pitchDataRef.current = [];
+
+        await register(await connect());
+
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
         });
@@ -49,17 +54,9 @@ export default function CreateMountain() {
         source.connect(analyser);
         analyserRef.current = analyser;
         
-        const mimeType =
-            MediaRecorder.isTypeSupported("audio/mp4")
-                ? "audio/mp4"
-                : MediaRecorder.isTypeSupported("audio/webm")
-                    ? "audio/webm"
-                    : "";
-
-        const recorder = new MediaRecorder(
-            stream,
-            mimeType ? { mimeType } : undefined
-        );
+        const recorder = new MediaRecorder(stream, {
+            mimeType: "audio/wav",
+        });
 
         recorder.ondataavailable = (event) => {
             chunksRef.current.push(event.data);
@@ -67,11 +64,20 @@ export default function CreateMountain() {
 
         recorder.onstop = () => {
             const audioBlob = new Blob(chunksRef.current, {
-                type: recorder.mimeType,
+                type: "audio/wav",
             });
 
             const url = URL.createObjectURL(audioBlob);
+
+            // 音声ファイルとして保存
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "voice_test.wav";
+            a.click();
+
             setAudioUrl(url);
+
+            console.log("録音ファイル保存:", recorder.mimeType);
 
             const reader = new FileReader();
 
