@@ -3,10 +3,12 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MediaRecorder, register } from "extendable-media-recorder";
-import { connect } from "extendable-media-recorder-wav-encoder";
+//import { MediaRecorder, register } from "extendable-media-recorder";
+//import { connect } from "extendable-media-recorder-wav-encoder";
 import styles from "./page.module.css"
 import background from "../../components/background.module.css";
+
+let isEncoderRegistered = false;
 
 export default function CreateMountain() {
     const [isRecording, setIsRecording] = useState(false);
@@ -37,7 +39,13 @@ export default function CreateMountain() {
         waveDataRef.current = [];
         pitchDataRef.current = [];
 
-        await register(await connect());
+        //await register(await connect());
+        const {MediaRecorder, register} = await import("extendable-media-recorder");
+        const {connect} = await import("extendable-media-recorder-wav-encoder");
+        if (!isEncoderRegistered) {
+            await register(await connect());
+            isEncoderRegistered = true;
+        }
 
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
@@ -62,7 +70,7 @@ export default function CreateMountain() {
             chunksRef.current.push(event.data);
         };
 
-        recorder.onstop = () => {
+        /*recorder.onstop = () => {
             const audioBlob = new Blob(chunksRef.current, {
                 type: "audio/wav",
             });
@@ -95,6 +103,40 @@ export default function CreateMountain() {
 
             console.log("pitchData");
             console.log(pitchDataRef.current);
+        };
+        */
+
+        recorder.onstop = async () => {
+            const audioBlob = new Blob(chunksRef.current, {
+                type: "audio/wav",
+            });
+
+            const url = URL.createObjectURL(audioBlob);
+            setAudioUrl(url);
+
+            // バックエンド(Flask)に送信するためのFormDataを作成
+            const formData = new FormData();
+            formData.append("audio", audioBlob, "voice_test.wav");
+
+            try{
+                const response = await fetch("http://localhost:5000/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log("Flask解析結果:", data);
+
+                //結果ページで使えるように解析結果を保存
+                localStorage.setItem("analysisResult", JSON.stringify(data));
+            } catch (error) {
+                console.error("バックエンド通信エラー：", error);
+                alert("音声の解析に失敗しました。バックエンドが起動しているか確認してください。");
+            }
+            console.log("waveData", waveDataRef.current);
+            console.log("pitchData", pitchDataRef.current);
         };
         recorder.start();
 
