@@ -2,7 +2,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Grid } from "@react-three/drei";
+import { OrbitControls, Grid, Line } from "@react-three/drei";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 
@@ -79,325 +79,256 @@ function getColorFromFrequency(
 }
 
 function Mountain() {
-    const [waveData, setWaveData] = useState<number[]>([]);
-    const [pitchData, setPitchData] = useState<number[]>([]);
+    const [pitchData, setPitchData] = useState<
+        {
+            character: string;
+            start: number;
+            end: number;
+            frequency: number;
+            note: string;
+            volume: number;
+        }[]
+    >([]);
 
     useEffect(() => {
-        const savedWaveData = localStorage.getItem("waveData");
-        const savedPitchData = localStorage.getItem("pitchData");
+        fetch("/voice_result.json")
+            .then((response) => response.json())
+            .then((data) => {
+                console.log("読み込んだJSON:", data);
 
-        if (savedWaveData) {
-            setWaveData(JSON.parse(savedWaveData));
-        }
-
-        if (savedPitchData) {
-            setPitchData(JSON.parse(savedPitchData));
-        }
+                setPitchData(data.pitch_data);
+            })
+            .catch((error) => {
+                console.error("JSON読み込みエラー:", error);
+            });
     }, []);
 
-    /*
-     * 5秒間の音声から
-     * 「どの周波数がどれくらい出ていたか」
-     * を連続的に調べる
-     */
-    const frequencyDistribution = useMemo(() => {
+    const { mountainGeometry, ridgePositions } = useMemo(() => {
+        if (pitchData.length === 0) {
+            return {
+                mountainGeometry: new THREE.BufferGeometry(),
+                ridgePositions: [] as THREE.Vector3[],
+            };
+        }
+
+        // -------------------------
+        // 山の基本パラメータ
+        // -------------------------
+
+        const mountainWidth = 150;
+        const mountainHeight = 50;
+
+        // -------------------------
+        // JSONから最低・最高周波数を取得
+        // -------------------------
+
         const validPitchData = pitchData.filter(
-            (pitch) => pitch > 0
+            (p) => p.frequency > 0
         );
 
         if (validPitchData.length === 0) {
             return {
-                minFrequency: 0,
-                maxFrequency: 0,
-                distribution: [],
+                mountainGeometry: new THREE.BufferGeometry(),
+                ridgePositions: [] as THREE.Vector3[],
             };
         }
 
-        // 実際に入力された声の周波数範囲
         const minFrequency = Math.min(
-            ...validPitchData
+            ...validPitchData.map((p) => p.frequency)
         );
 
         const maxFrequency = Math.max(
-            ...validPitchData
+            ...validPitchData.map((p) => p.frequency)
         );
 
-        /*
-        * 1Hz刻みの連続的な分布を作る
-        *
-        * 例えば180.5Hzの声なら、
-        * 180Hzと181Hzの両方に影響する。
-        */
-        const distribution: number[] = [];
+        const maxTime = Math.max(
+            ...pitchData.map((p) => p.end)
+        );
 
-        for (
-            let frequency = Math.floor(minFrequency);
-            frequency <= Math.ceil(maxFrequency);
-            frequency++
-        ) {
-            let amount = 0;
+        // -------------------------
+        // 稜線の頂点
+        // -------------------------
 
-            for (const pitch of validPitchData) {
-                const distance = Math.abs(
-                    pitch - frequency
+        const ridge: THREE.Vector3[] = [];
+
+        pitchData.forEach((pitch) => {
+            // =========================
+            // X = 時間
+            // =========================
+
+            const centerTime =
+                (pitch.start + pitch.end) / 2;
+
+            const time =
+                centerTime / maxTime;
+
+            const x =
+                (time - 0.5) * mountainWidth;
+
+            // =========================
+            // Y = 周波数
+            // =========================
+
+            const normalizedPitch =
+                THREE.MathUtils.clamp(
+                    (pitch.frequency - minFrequency) /
+                        (maxFrequency - minFrequency || 1),
+                    0,
+                    1
                 );
 
-                const spread = 8;
+            const height =
+                normalizedPitch * mountainHeight;
 
-                if (distance < spread) {
-                    const influence =
-                        1 - distance / spread;
+            // =========================
+            // Z = 音量
+            // =========================
 
-                    amount += influence;
-                }
-            }
+            const volumeNormalized =
+                THREE.MathUtils.clamp(
+                    (pitch.volume + 60) / 45,
+                    0,
+                    1
+                );
 
-            distribution.push(amount);
-        }
+            const z =
+                THREE.MathUtils.lerp(
+                    100,
+                    -100,
+                    volumeNormalized
+                );
 
-        // 最大値を1にする
-        const maxDistribution = Math.max(
-            ...distribution,
-            1
-        );
-
-        return {
-            minFrequency,
-            maxFrequency,
-            distribution: distribution.map(
-                (value) =>
-                    value / maxDistribution
-            ),
-        };
-    }, [pitchData]);
-
-    const geometry = useMemo(() => {
-        // -------------------------
-        // 音声データから値を取り出す
-        // -------------------------
-
-        const maxVolume =
-            waveData.length > 0
-                ? Math.max(...waveData)
-                : 0.5;
-
-        const validPitchData = pitchData.filter(
-            (pitch) => pitch > 0
-        );
-
-        const highestPitch =
-            validPitchData.length > 0
-                ? Math.max(...validPitchData)
-                : 400;
-
-        // -------------------------
-        // 山のパラメータ
-        // -------------------------
-
-        const minPitch =
-            frequencyDistribution.minFrequency || 80;
-
-        const maxPitch =
-            frequencyDistribution.maxFrequency || 400;
-
-        /*
-         * 最高音 → 山頂の高さ
-         */
-        const pitchNormalized = THREE.MathUtils.clamp(
-            (highestPitch - minPitch) /
-                (700 - minPitch),
-            0,
-            1
-        );
-
-        const mountainHeight =
-            THREE.MathUtils.lerp(
-                2,
-                10,
-                pitchNormalized
+            ridge.push(
+                new THREE.Vector3(
+                    x,
+                    height,
+                    z
+                )
             );
-
-        /*
-         * 音量 → 山の大きさ
-         */
-        const mountainRadius =
-            THREE.MathUtils.lerp(
-                3,
-                8,
-                maxVolume
-            );
+        });
 
         // -------------------------
-        // 山のメッシュ
+        // 稜線から斜面を作る
         // -------------------------
-
-        const segments = 80;
 
         const positions: number[] = [];
-        const colors: number[] = [];
         const indices: number[] = [];
 
-        const verticesPerSide = segments + 1;
+        // 山の奥行き
+        const mountainDepth = 120;
 
-        for (let z = 0; z <= segments; z++) {
-            for (let x = 0; x <= segments; x++) {
+        // 斜面を何段に分けるか
+        const slopeSteps = 12;
 
-                const normalizedX =
-                    (x / segments) * 2 - 1;
+        // 稜線から地面までの距離
+        const halfDepth = mountainDepth / 2;
 
-                const normalizedZ =
-                    (z / segments) * 2 - 1;
+        // -------------------------
+        // 頂上 → 地面までの頂点を作る
+        // -------------------------
 
-                const worldX =
-                    normalizedX * mountainRadius;
+        for (let i = 0; i < ridge.length; i++) {
+            const point = ridge[i];
 
-                const worldZ =
-                    normalizedZ * mountainRadius;
+            for (let step = 0; step <= slopeSteps; step++) {
+                const ratio = step / slopeSteps;
 
-                const distance = Math.sqrt(
-                    normalizedX * normalizedX +
-                    normalizedZ * normalizedZ
-                );
+                // Z方向に徐々に広げる
+                const zOffset =
+                    THREE.MathUtils.lerp(
+                        0,
+                        halfDepth,
+                        ratio
+                    );
 
-                // -------------------------
-                // 山の形
-                // -------------------------
-
-                const t = Math.max(
-                    0,
-                    1 - distance
-                );
-
-                const peak =
-                    Math.pow(t, 3.0);
-
-                const base =
-                    Math.pow(t, 0.55);
-
-                const falloff =
-                    peak * 0.85 +
-                    base * 0.15;
-
+                // 地面に近づくほど高さを下げる
                 const y =
-                    mountainHeight * falloff;
+                    THREE.MathUtils.lerp(
+                        point.y,
+                        0,
+                        ratio
+                    );
+
+                // -------------------------
+                // 手前側
+                // -------------------------
 
                 positions.push(
-                    worldX,
+                    point.x,
                     y,
-                    worldZ
+                    point.z - zOffset
                 );
 
                 // -------------------------
-                // 山の高さ → 周波数
+                // 奥側
                 // -------------------------
 
-                const heightRatio =
-                    mountainHeight > 0
-                        ? y / mountainHeight
-                        : 0;
-
-                const frequency =
-                    minPitch +
-                    heightRatio *
-                        (maxPitch - minPitch);
-
-                // -------------------------
-                // 色
-                // -------------------------
-
-                const color =getColorFromFrequency(
-                    frequency,
-                    minPitch,
-                    maxPitch
-                );
-
-                /*
-                 * 周波数分布を調べる
-                 *
-                 * 例えば180Hzの声が多ければ、
-                 * 180Hz付近の色が強くなる。
-                 */
-                let distribution = 0;
-
-                if (
-                    frequencyDistribution.distribution.length > 0
-                ) {
-                    const index = Math.round(
-                        frequency - Math.floor(frequencyDistribution.minFrequency)
-                    );
-
-                    distribution = frequencyDistribution.distribution[
-                        THREE.MathUtils.clamp(
-                            index,
-                            0,
-                            frequencyDistribution.distribution.length - 1
-                        )
-                    ] ?? 0;
-                }
-
-                /*
-                 * 成分量によって色の濃さを変える。
-                 *
-                 * 今回はまず、
-                 * 「色の帯を太くする」
-                 * 前段階として、
-                 * 成分が多い周波数ほど
-                 * 色を強くする。
-                 */
-                const brightness =
-                    THREE.MathUtils.lerp(
-                        0.45,
-                        1.0,
-                        distribution
-                    );
-
-                color.multiplyScalar(
-                    brightness
-                );
-
-                const alpha = distance <= 1 ? 1 : 0;
-                colors.push(
-                    color.r,
-                    color.g,
-                    color.b,
-                    alpha
+                positions.push(
+                    point.x,
+                    y,
+                    point.z + zOffset
                 );
             }
         }
 
         // -------------------------
-        // 三角形
+        // 面を作る
         // -------------------------
 
-        for (let z = 0; z < segments; z++) {
-            for (let x = 0; x < segments; x++) {
+        const rowSize = (slopeSteps + 1) * 2;
 
-                const a =
-                    z * verticesPerSide + x;
+        for (let i = 0; i < ridge.length - 1; i++) {
 
-                const b = a + 1;
+            for (let step = 0; step < slopeSteps; step++) {
 
-                const c =
-                    a + verticesPerSide;
+                // 現在の断面
+                const current =
+                    i * rowSize + step * 2;
 
-                const d = c + 1;
+                // 次の断面
+                const next =
+                    (i + 1) * rowSize + step * 2;
 
+                // 現在の段の4頂点
+                const currentFront = current;
+                const currentBack = current + 1;
+
+                // 次の段の4頂点
+                const nextFront = next;
+                const nextBack = next + 1;
+
+                // 手前側
                 indices.push(
-                    a,
-                    c,
-                    b,
+                    currentFront,
+                    nextFront,
+                    currentFront + 2,
 
-                    b,
-                    c,
-                    d
+                    currentFront + 2,
+                    nextFront,
+                    nextFront + 2
+                );
+
+                // 奥側
+                indices.push(
+                    currentBack + 2,
+                    nextBack,
+                    currentBack,
+
+                    currentBack + 2,
+                    nextBack + 2,
+                    nextBack
                 );
             }
         }
 
-        const geometry =
+        // -------------------------
+        // 山のGeometry
+        // -------------------------
+
+        const mountainGeometry =
             new THREE.BufferGeometry();
 
-        geometry.setAttribute(
+        mountainGeometry.setAttribute(
             "position",
             new THREE.Float32BufferAttribute(
                 positions,
@@ -405,34 +336,41 @@ function Mountain() {
             )
         );
 
-        geometry.setAttribute(
-            "color",
-            new THREE.Float32BufferAttribute(
-                colors,
-                4
-            )
-        );
+        mountainGeometry.setIndex(indices);
 
-        geometry.setIndex(indices);
+        mountainGeometry.computeVertexNormals();
 
-        geometry.computeVertexNormals();
+        return {
+            mountainGeometry,
+            ridgePositions: ridge,
+        };
 
-        return geometry;
-    }, [
-        waveData,
-        pitchData,
-        frequencyDistribution,
-    ]);
+    }, [pitchData]);
 
     return (
-        <mesh geometry={geometry}>
-            <meshStandardMaterial
-                vertexColors
-                transparent
-                side={THREE.DoubleSide}
-                roughness={1}
-            />
-        </mesh>
+        <>
+            {/* -------------------------
+                山の面
+            ------------------------- */}
+            <mesh geometry={mountainGeometry}>
+                <meshStandardMaterial
+                    color="white"
+                    side={THREE.DoubleSide}
+                    roughness={1}
+                />
+            </mesh>
+
+            {/* -------------------------
+                山の稜線
+            ------------------------- */}
+            {ridgePositions.length >= 2 && (
+                <Line
+                    points={ridgePositions}
+                    color="white"
+                    lineWidth={2}
+                />
+            )}
+        </>
     );
 }
 

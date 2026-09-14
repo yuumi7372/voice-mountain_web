@@ -1,0 +1,62 @@
+{
+  "status": "stopped",
+  "text": "儚く生ぬるい涙",
+  "pitch_data": [
+    {
+      "character": "儚",
+      "start": 1.082,
+      "end": 1.763,
+      "frequency": 260.2144488723404,
+      "note": "C4",
+      "volume": -20.88486671447754
+    },
+    {
+      "character": "く",
+      "start": 1.763,
+      "end": 2.685,
+      "frequency": 278.89094086988155,
+      "note": "C#4",
+      "volume": -26.806060791015625
+    },
+    {
+      "character": "生",
+      "start": 2.685,
+      "end": 3.186,
+      "frequency": 229.16198493849998,
+      "note": "A#3",
+      "volume": -25.254100799560547
+    },
+    {
+      "character": "ぬ",
+      "start": 3.186,
+      "end": 3.567,
+      "frequency": 254.27114264623089,
+      "note": "C4",
+      "volume": -21.801870346069336
+    },
+    {
+      "character": "る",
+      "start": 3.567,
+      "end": 3.667,
+      "frequency": 253.53889563769576,
+      "note": "B3",
+      "volume": -22.836400985717773
+    },
+    {
+      "character": "い",
+      "start": 3.667,
+      "end": 3.808,
+      "frequency": 252.81086606159067,
+      "note": "B3",
+      "volume": -22.764854431152344
+    },
+    {
+      "character": "涙",
+      "start": 3.808,
+      "end": 3.828,
+      "frequency": 235.88087865445704,
+      "note": "A#3",
+      "volume": -24.269134521484375
+    }
+  ]
+}
