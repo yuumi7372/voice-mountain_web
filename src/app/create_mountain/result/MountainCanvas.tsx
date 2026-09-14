@@ -165,26 +165,36 @@ function Mountain() {
         useState(0);
 
     useEffect(() => {
-        fetch("/voice_result.json")
-            .then((response) => response.json())
-            .then((data) => {
-                console.log(
-                    "読み込んだJSON:",
-                    data
-                );
+        const savedData =
+            localStorage.getItem("analysisResult");
 
-                setPitchData(data.pitch_data);
+        if (!savedData) {
+            console.error(
+                "解析結果が見つかりません"
+            );
+            return;
+        }
 
-                setHarmonicRichness(
-                    data.harmonic_richness
-                );
-            })
-            .catch((error) => {
-                console.error(
-                    "JSON読み込みエラー:",
-                    error
-                );
-            });
+        try {
+            const data = JSON.parse(savedData);
+
+            console.log(
+                "読み込んだ解析結果:",
+                data
+            );
+
+            setPitchData(data.pitch_data);
+
+            setHarmonicRichness(
+                data.harmonic_richness
+            );
+
+        } catch (error) {
+            console.error(
+                "解析結果の読み込みに失敗しました:",
+                error
+            );
+        }
     }, []);
 
 
