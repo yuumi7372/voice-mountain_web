@@ -1,63 +1,161 @@
 {
   "status": "stopped",
-  "text": "儚く生ぬるい涙",
+  "text": "一瞬でも信じた音景色を揺らす",
   "pitch_data": [
     {
-      "character": "儚",
-      "start": 1.082,
-      "end": 1.763,
-      "frequency": 260.2144488723404,
-      "note": "C4",
-      "volume": -20.88486671447754
-    },
-    {
-      "character": "く",
-      "start": 1.763,
-      "end": 2.685,
-      "frequency": 278.89094086988155,
+      "character": "一",
+      "start": 0.051,
+      "end": 0.353,
+      "frequency": 270.9514571534715,
       "note": "C#4",
-      "volume": -26.806060791015625
+      "volume": -19.08932876586914,
+      "spectral_centroid": 4248.989836404011,
+      "brightness": 100.0,
+      "warmth": 18.12371460145217
     },
     {
-      "character": "生",
-      "start": 2.685,
-      "end": 3.186,
-      "frequency": 229.16198493849998,
-      "note": "A#3",
-      "volume": -25.254100799560547
+      "character": "瞬",
+      "start": 0.353,
+      "end": 0.795,
+      "frequency": 336.48458709616426,
+      "note": "E4",
+      "volume": -19.254343032836914,
+      "spectral_centroid": 2598.151515376661,
+      "brightness": 83.92606061506643,
+      "warmth": 21.7918089644061
     },
     {
-      "character": "ぬ",
-      "start": 3.186,
-      "end": 3.567,
-      "frequency": 254.27114264623089,
+      "character": "で",
+      "start": 0.795,
+      "end": 0.996,
+      "frequency": 307.666579660975,
+      "note": "D#4",
+      "volume": -15.012781143188477,
+      "spectral_centroid": 1996.6724186711388,
+      "brightness": 59.866896746845555,
+      "warmth": 35.74259139419583
+    },
+    {
+      "character": "も",
+      "start": 0.996,
+      "end": 1.538,
+      "frequency": 318.5164181612563,
+      "note": "D#4",
+      "volume": -17.325998306274414,
+      "spectral_centroid": 2965.2009832442,
+      "brightness": 98.60803932976799,
+      "warmth": 15.648697536049188
+    },
+    {
+      "character": "信",
+      "start": 1.538,
+      "end": 1.98,
+      "frequency": 255.74412039083626,
       "note": "C4",
-      "volume": -21.801870346069336
+      "volume": -27.81744384765625,
+      "spectral_centroid": 3437.469792009374,
+      "brightness": 100.0,
+      "warmth": 19.13753705229452
     },
     {
-      "character": "る",
-      "start": 3.567,
-      "end": 3.667,
-      "frequency": 253.53889563769576,
-      "note": "B3",
-      "volume": -22.836400985717773
+      "character": "じ",
+      "start": 1.98,
+      "end": 2.161,
+      "frequency": 286.23638840881495,
+      "note": "D4",
+      "volume": -32.0396842956543,
+      "spectral_centroid": 5241.022012430354,
+      "brightness": 100.0,
+      "warmth": 17.104719184429275
     },
     {
-      "character": "い",
-      "start": 3.667,
-      "end": 3.808,
-      "frequency": 252.81086606159067,
-      "note": "B3",
-      "volume": -22.764854431152344
+      "character": "た",
+      "start": 2.161,
+      "end": 2.362,
+      "frequency": 346.3443380941437,
+      "note": "F4",
+      "volume": -20.598560333251953,
+      "spectral_centroid": 2041.2737571326613,
+      "brightness": 61.65095028530645,
+      "warmth": 32.272047396087466
     },
     {
-      "character": "涙",
-      "start": 3.808,
-      "end": 3.828,
-      "frequency": 235.88087865445704,
-      "note": "A#3",
-      "volume": -24.269134521484375
+      "character": "音",
+      "start": 2.362,
+      "end": 3.126,
+      "frequency": 396.69615271402165,
+      "note": "G4",
+      "volume": -17.147045135498047,
+      "spectral_centroid": 2549.631533030542,
+      "brightness": 81.98526132122169,
+      "warmth": 18.74810423680465
+    },
+    {
+      "character": "景",
+      "start": 3.126,
+      "end": 3.327,
+      "frequency": 378.7819907225479,
+      "note": "F#4",
+      "volume": -28.43217658996582,
+      "spectral_centroid": 5828.334567229192,
+      "brightness": 100.0,
+      "warmth": 10.935012363513744
+    },
+    {
+      "character": "色",
+      "start": 3.327,
+      "end": 4.171,
+      "frequency": 396.69615271402165,
+      "note": "G4",
+      "volume": -22.963829040527344,
+      "spectral_centroid": 2648.5688095594414,
+      "brightness": 85.94275238237765,
+      "warmth": 16.76935870622667
+    },
+    {
+      "character": "を",
+      "start": 4.171,
+      "end": 4.613,
+      "frequency": 387.6356000640202,
+      "note": "G4",
+      "volume": -16.204994201660156,
+      "spectral_centroid": 2370.6247738086718,
+      "brightness": 74.82499095234687,
+      "warmth": 22.932276264575492
+    },
+    {
+      "character": "揺",
+      "start": 4.613,
+      "end": 4.814,
+      "frequency": 329.7488753899414,
+      "note": "E4",
+      "volume": -23.83702278137207,
+      "spectral_centroid": 2255.3516709477058,
+      "brightness": 70.21406683790823,
+      "warmth": 29.096853300066726
+    },
+    {
+      "character": "ら",
+      "start": 4.814,
+      "end": 4.955,
+      "frequency": 298.0471179283516,
+      "note": "D4",
+      "volume": -24.289875030517578,
+      "spectral_centroid": 2033.7968706183826,
+      "brightness": 61.35187482473531,
+      "warmth": 35.64139980409251
+    },
+    {
+      "character": "す",
+      "start": 4.955,
+      "end": 4.975,
+      "frequency": 302.38105197476955,
+      "note": "D#4",
+      "volume": -30.21935272216797,
+      "spectral_centroid": 2207.2240141161124,
+      "brightness": 68.2889605646445,
+      "warmth": 31.883927997710053
     }
   ],
-  "harmonic_richness": 22.419190956292937
+  "harmonic_richness": 31.73492803894535
 }
