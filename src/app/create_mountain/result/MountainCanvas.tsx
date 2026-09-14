@@ -89,6 +89,7 @@ function Mountain() {
             volume: number;
         }[]
     >([]);
+    const [harmonicRichness, setHarmonicRichness] = useState(0);
 
     useEffect(() => {
         fetch("/voice_result.json")
@@ -97,6 +98,7 @@ function Mountain() {
                 console.log("読み込んだJSON:", data);
 
                 setPitchData(data.pitch_data);
+                setHarmonicRichness(data.harmonic_richness);
             })
             .catch((error) => {
                 console.error("JSON読み込みエラー:", error);
@@ -115,8 +117,8 @@ function Mountain() {
         // 山の基本パラメータ
         // -------------------------
 
-        const mountainWidth = 150;
-        const mountainHeight = 50;
+        const mountainWidth = 500;
+        const mountainHeight = 100;
 
         // -------------------------
         // JSONから最低・最高周波数を取得
@@ -215,13 +217,18 @@ function Mountain() {
         const indices: number[] = [];
 
         // 山の奥行き
-        const mountainDepth = 120;
+        const mountainDepth = 200;
+        const halfDepth = mountainDepth / 2; 
 
         // 斜面を何段に分けるか
         const slopeSteps = 12;
-
-        // 稜線から地面までの距離
-        const halfDepth = mountainDepth / 2;
+        
+        // ハーモニックリッチネスを使って斜面の広がりを決める
+        const slopeWidth = THREE.MathUtils.lerp(
+            halfDepth,
+            mountainDepth,
+            harmonicRichness / 100
+        );
 
         // -------------------------
         // 頂上 → 地面までの頂点を作る
@@ -237,7 +244,7 @@ function Mountain() {
                 const zOffset =
                     THREE.MathUtils.lerp(
                         0,
-                        halfDepth,
+                        slopeWidth,
                         ratio
                     );
 
