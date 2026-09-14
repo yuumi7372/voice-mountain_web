@@ -1,8 +1,8 @@
 /* ./create_mountain/result/MountainCanvas.tsx */
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Grid, Line } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
+import { OrbitControls, Line } from "@react-three/drei";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 
@@ -145,6 +145,12 @@ function getColorFromVoice(
 
 
 function Mountain() {
+    const { camera, controls } = useThree();
+    const orbitControls = controls as unknown as {
+        target: THREE.Vector3;
+        update: () => void;
+    };
+
     const [pitchData, setPitchData] = useState<
         {
             character: string;
@@ -161,8 +167,12 @@ function Mountain() {
         }[]
     >([]);
 
-    const [harmonicRichness, setHarmonicRichness] =
-        useState(0);
+    const [harmonicRichness, setHarmonicRichness] = useState(0);
+
+    const mountainWidth = 500;
+    const mountainHeight = 100;
+    const mountainDepth = 200;
+    const halfDepth = mountainDepth / 2;
 
     useEffect(() => {
         const savedData =
@@ -197,7 +207,6 @@ function Mountain() {
         }
     }, []);
 
-
     const {
         mountainGeometry,
         ridgePositions,
@@ -215,15 +224,6 @@ function Mountain() {
                     [] as THREE.Color[],
             };
         }
-
-
-        // =====================================================
-        // 山の基本パラメータ
-        // =====================================================
-
-        const mountainWidth = 500;
-        const mountainHeight = 100;
-
 
         // =====================================================
         // JSONから最低・最高周波数を取得
@@ -370,14 +370,7 @@ function Mountain() {
         const indices: number[] = [];
 
 
-        // =====================================================
-        // 山の奥行き
-        // =====================================================
-
-        const mountainDepth = 200;
-
-        const halfDepth =
-            mountainDepth / 2;
+        
 
 
         // =====================================================
@@ -602,6 +595,8 @@ function Mountain() {
 
         mountainGeometry.computeVertexNormals();
 
+        mountainGeometry.computeBoundingBox();
+
 
         return {
             mountainGeometry,
@@ -610,6 +605,51 @@ function Mountain() {
         };
 
     }, [pitchData, harmonicRichness]);
+
+    // カメラの位置を調整して、山全体が見えるようにする
+    useEffect(() => {
+        if (!mountainGeometry.boundingBox) {
+            return;
+        }
+
+        const box = mountainGeometry.boundingBox;
+
+        // 山の中心
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+
+        // 山の大きさ
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // 山を画面に収めるための距離
+        const maxSize = Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+        const cameraDistance = maxSize * 1.2;
+
+        // カメラ位置
+        camera.position.set(
+            center.x,
+            center.y + size.y * 0.1,
+            center.z + cameraDistance
+        );
+
+        // OrbitControlsの注視点も山の中心にする
+        if (orbitControls) {
+            orbitControls.target.set(
+                center.x,
+                center.y,
+                center.z
+            );
+
+            orbitControls.update();
+        }
+
+    }, [camera, controls, mountainGeometry]);
 
 
     return (
@@ -649,8 +689,8 @@ export default function MountainCanvas() {
     return (
         <Canvas
             camera={{
-                position: [0, 7, 14],
-                fov: 50,
+                position: [0, 10, 150],
+                fov: 40,
             }}
             gl={{
                 preserveDrawingBuffer: true,
@@ -667,21 +707,7 @@ export default function MountainCanvas() {
 
             <Mountain />
 
-            {/* =================================================
-                方眼紙っぽい地面
-            ================================================= */}
-
-            <Grid
-                args={[30, 30]}
-                cellSize={1}
-                cellThickness={0.5}
-                sectionSize={5}
-                sectionThickness={1}
-                fadeDistance={40}
-                fadeStrength={1}
-            />
-
-            <OrbitControls />
+            <OrbitControls makeDefault />
         </Canvas>
     );
 }
