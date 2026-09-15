@@ -2,12 +2,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "./page.module.css"
+import styles from "./page.module.css";
 import background from "../components/background.module.css";
 import { useRouter } from "next/navigation";
+import { supabase } from "../lib/supabase";
 
 type MountainPost = {
-  id: number;
+  id: string;
   title: string;
   comment: string;
   image: string | null;
@@ -19,19 +20,58 @@ type MountainPost = {
 export default function Home() {
   const router = useRouter();
   const [mountains, setMountains] = useState<MountainPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const gotoCreateMountainPage = () => {
     router.push("/create_mountain");
   };
 
   useEffect(() => {
-    const savedPosts = JSON.parse(
-      localStorage.getItem("mountainPosts") || "[]"
-    ) as MountainPost[];
+    async function fetchMountains() {
+      try {
+        const { data, error } = await supabase
+          .from("mountain")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-    setMountains(savedPosts);
+        if (error) {
+          throw error;
+        }
+
+        const posts: MountainPost[] = (data ?? []).map((mountain) => {
+          let imageUrl: string | null = null;
+
+          // img_pathがある場合、Storageの画像URLを取得
+          if (mountain.img_path) {
+            const { data: imageData } = supabase.storage
+              .from("img")
+              .getPublicUrl(mountain.img_path);
+
+            imageUrl = imageData.publicUrl;
+          }
+
+          return {
+            id: mountain.id,
+            title: mountain.name,
+            comment: mountain.comment ?? "",
+            image: imageUrl,
+            aiType: mountain.ai_type ?? "未分析",
+            aiComment:
+              mountain.analysis_data?.aiReview?.comment ?? "",
+            createdAt: mountain.created_at,
+          };
+        });
+
+        setMountains(posts);
+      } catch (error) {
+        console.error("山一覧の取得に失敗しました:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchMountains();
   }, []);
-  
 
   return (
     <main className={background.container}>
@@ -53,7 +93,14 @@ export default function Home() {
           </button>
         </header>
 
-        {mountains.length === 0 ? (
+        {isLoading ? (
+          <section className={styles.emptyArea}>
+            <div className={styles.emptyIcon}>⛰️</div>
+            <h2 className={styles.emptyTitle}>
+              山を読み込んでいます
+            </h2>
+          </section>
+        ) : mountains.length === 0 ? (
           <section className={styles.emptyArea}>
             <div className={styles.emptyIcon}>⛰️</div>
             <h2 className={styles.emptyTitle}>まだ山がありません</h2>
@@ -64,9 +111,13 @@ export default function Home() {
         ) : (
           <section className={styles.grid}>
             {mountains.map((mountain) => (
-              <article key={mountain.id}
-              className={styles.card}
-              onClick={() => router.push(`/mountain/${mountain.id}`)}>
+              <article
+                key={mountain.id}
+                className={styles.card}
+                onClick={() =>
+                  router.push(`/mountain/${mountain.id}`)
+                }
+              >
                 <div className={styles.imageArea}>
                   {mountain.image ? (
                     <img
@@ -80,9 +131,17 @@ export default function Home() {
                 </div>
 
                 <div className={styles.cardBody}>
-                  <p className={styles.aiType}>🤖 {mountain.aiType}</p>
-                  <h2 className={styles.cardTitle}>{mountain.title}</h2>
-                  <p className={styles.comment}>{mountain.comment}</p>
+                  <p className={styles.aiType}>
+                    🤖 {mountain.aiType}
+                  </p>
+
+                  <h2 className={styles.cardTitle}>
+                    {mountain.title}
+                  </h2>
+
+                  <p className={styles.comment}>
+                    {mountain.comment}
+                  </p>
                 </div>
               </article>
             ))}

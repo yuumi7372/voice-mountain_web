@@ -3,8 +3,6 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-//import { MediaRecorder, register } from "extendable-media-recorder";
-//import { connect } from "extendable-media-recorder-wav-encoder";
 import styles from "./page.module.css"
 import background from "../../components/background.module.css";
 
@@ -72,41 +70,6 @@ export default function CreateMountain() {
             chunksRef.current.push(event.data);
         };
 
-       /*  recorder.onstop = () => {
-            const audioBlob = new Blob(chunksRef.current, {
-                type: "audio/wav",
-            });
-
-            const url = URL.createObjectURL(audioBlob);
-
-            // 音声ファイルとして保存
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "voice_test.wav";
-            a.click();
-
-            setAudioUrl(url);
-
-            console.log("録音ファイル保存:", recorder.mimeType);
-
-            const reader = new FileReader();
-
-            reader.onloadend = () => {
-                localStorage.setItem(
-                    "audioData",
-                    reader.result as string
-                );
-            };
-
-            reader.readAsDataURL(audioBlob);
-
-            console.log("waveData");
-            console.log(waveDataRef.current);
-
-            console.log("pitchData");
-            console.log(pitchDataRef.current);
-        }; */
-
         recorder.onstop = async () => {
             const audioBlob = new Blob(chunksRef.current, {
                 type: "audio/wav",
@@ -115,30 +78,49 @@ export default function CreateMountain() {
             const url = URL.createObjectURL(audioBlob);
             setAudioUrl(url);
 
+            // 録音音声をBase64にしてlocalStorageへ保存
+            const reader = new FileReader();
+
+            reader.onloadend = () => {
+                const base64Audio = reader.result as string;
+
+                localStorage.setItem("audioData", base64Audio);
+
+                console.log("音声データを保存しました");
+            };
+
+            reader.readAsDataURL(audioBlob);
+
             // バックエンド(Flask)に送信するためのFormDataを作成
             const formData = new FormData();
             formData.append("audio", audioBlob, "voice_test.wav");
 
-            try{
+            try {
                 const response = await fetch("http://localhost:5000/upload", {
                     method: "POST",
                     body: formData
                 });
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
                 const data = await response.json();
                 console.log("Flask解析結果:", data);
 
-                //結果ページで使えるように解析結果を保存
-                localStorage.setItem("analysisResult", JSON.stringify(data));
+                // 結果ページで使えるように解析結果を保存
+                localStorage.setItem(
+                    "analysisResult",
+                    JSON.stringify(data)
+                );
             } catch (error) {
                 console.error("バックエンド通信エラー：", error);
-                alert("音声の解析に失敗しました。バックエンドが起動しているか確認してください。");
+                alert(
+                    "音声の解析に失敗しました。バックエンドが起動しているか確認してください。"
+                );
             } finally {
                 setIsAnalyzing(false);
             }
-            
         };
 
         recorder.start();
