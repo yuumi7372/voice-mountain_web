@@ -200,6 +200,12 @@
     transform: translateY(0);
 }
 
+.connectPage {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
 /* =========================
    スマホ
    ========================= */
