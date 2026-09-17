@@ -33,6 +33,10 @@ export default function Home() {
     router.push("/create_mountain");
   };
 
+  const gotoConnectMountainPage = () => {
+    router.push("/connect");
+  };
+
   useEffect(() => {
     async function fetchMountains() {
       try {
@@ -127,12 +131,21 @@ export default function Home() {
             </p>
           </div>
 
-          <button
-            className={styles.createMountainButton}
-            onClick={gotoCreateMountainPage}
-          >
-            + 山を作る
-          </button>
+          <div className={styles.headerButtons}>
+            <button
+              className={styles.connectMountainButton}
+              onClick={gotoConnectMountainPage}
+            >
+              🏔️ 山を繋げる
+            </button>
+
+            <button
+              className={styles.createMountainButton}
+              onClick={gotoCreateMountainPage}
+            >
+              + 山を作る
+            </button>
+          </div>
         </header>
 
         {isLoading ? (

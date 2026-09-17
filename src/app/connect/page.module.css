@@ -1,0 +1,227 @@
+/* ./connect/page.module.css */
+
+.wrapper {
+    width: 100%;
+    max-width: 980px;
+}
+
+/* =========================
+   トップへ戻る
+   ========================= */
+
+.backButton {
+    border: none;
+    background: transparent;
+    color: #607566;
+    font-weight: 800;
+    padding: 0;
+    margin-bottom: 20px;
+    cursor: pointer;
+
+    transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.backButton:hover {
+    color: #4d7049;
+    transform: translateX(-3px);
+}
+
+/* =========================
+   ヘッダー
+   ========================= */
+
+.header {
+    margin-bottom: 28px;
+}
+
+.label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: #6f9b6b;
+    font-weight: 800;
+}
+
+.title {
+    margin: 0;
+    font-family: "WDXL Lubrifont JP N", sans-serif;
+    font-size: 44px;
+    color: #2f4f35;
+}
+
+.subtitle {
+    margin: 8px 0 0;
+    color: #607566;
+    font-size: 15px;
+}
+
+/* =========================
+   山を繋げる開始エリア
+   ========================= */
+
+.startArea {
+    margin-bottom: 40px;
+    padding: 28px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 18px 40px rgba(80, 120, 90, 0.18);
+    text-align: center;
+}
+
+.connectButton {
+    border: none;
+    background-color: #facc15;
+    color: #4d3b00;
+    padding: 18px 36px;
+    font-size: 18px;
+    font-weight: 900;
+    border-radius: 999px;
+    box-shadow: 0 12px 26px rgba(250, 204, 21, 0.35);
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.connectButton:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(250, 204, 21, 0.45);
+}
+
+.connectButton:active {
+    transform: translateY(0);
+}
+
+.startText {
+    margin: 14px 0 0;
+    color: #607566;
+    font-size: 13px;
+}
+
+/* =========================
+   各セクション
+   ========================= */
+
+.section {
+    margin-bottom: 32px;
+}
+
+.sectionTitle {
+    margin: 0 0 14px;
+    font-size: 22px;
+    color: #2f4f35;
+    font-weight: 900;
+}
+
+/* =========================
+   山表示エリア
+   ========================= */
+
+.mountainArea {
+    min-height: 360px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 18px 40px rgba(80, 120, 90, 0.14);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.placeholderIcon {
+    font-size: 72px;
+    margin-bottom: 12px;
+}
+
+.placeholderText {
+    margin: 0;
+    color: #607566;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* =========================
+   音声認識結果
+   ========================= */
+
+.textArea {
+    min-height: 140px;
+    padding: 24px;
+    box-sizing: border-box;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 18px 40px rgba(80, 120, 90, 0.14);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================
+   音声再生
+   ========================= */
+
+.audioArea {
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 18px 40px rgba(80, 120, 90, 0.14);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.playButton {
+    border: none;
+    background-color: #6f9b6b;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.playButton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(80, 120, 90, 0.22);
+}
+
+.playButton:active {
+    transform: translateY(0);
+}
+
+/* =========================
+   スマホ
+   ========================= */
+
+@media (max-width: 800px) {
+    .wrapper {
+        max-width: 460px;
+    }
+
+    .title {
+        font-size: 36px;
+    }
+
+    .startArea {
+        padding: 24px;
+    }
+
+    .connectButton {
+        width: 100%;
+    }
+
+    .mountainArea {
+        min-height: 260px;
+    }
+}

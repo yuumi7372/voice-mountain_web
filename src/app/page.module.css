@@ -44,6 +44,43 @@
     cursor: pointer;
 }
 
+.headerButtons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.connectMountainButton {
+    border: 2px solid #6f9b6b;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #4d7049;
+    padding: 12px 20px;
+    font-weight: bold;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.createMountainButton,
+.connectMountainButton {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.createMountainButton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 28px rgba(250, 204, 21, 0.45);
+}
+
+.connectMountainButton:hover {
+    transform: translateY(-3px);
+    background-color: #f5f9f2;
+    box-shadow: 0 10px 22px rgba(80, 120, 90, 0.18);
+}
+
+.createMountainButton:active,
+.connectMountainButton:active {
+    transform: translateY(0);
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -176,6 +213,12 @@
         font-size: 36px;
     }
 
+    .headerButtons {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .connectMountainButton,
     .createMountainButton {
         width: 100%;
     }
