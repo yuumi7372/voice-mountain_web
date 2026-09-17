@@ -19,13 +19,21 @@ type MountainPost = {
     createdAt: string;
     audioUrl: string | null;
     analysisResult: any;
+    tagName: string | null;
+};
+
+type Tag = {
+    id: string;
+    name: string;
 };
 
 export default function MountainDetailPage() {
     const params = useParams();
     const router = useRouter();
 
-    const [mountain, setMountain] = useState<MountainPost | null>(null);
+    const [mountain, setMountain] =
+        useState<MountainPost | null>(null);
+
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -40,6 +48,21 @@ export default function MountainDetailPage() {
                 if (typeof mountainId !== "string") {
                     return;
                 }
+
+                // -------------------------
+                // タグを取得
+                // -------------------------
+
+                const { data: tagData, error: tagError } =
+                    await supabase
+                        .from("tags")
+                        .select("id, name");
+
+                if (tagError) {
+                    throw tagError;
+                }
+
+                const tags: Tag[] = tagData ?? [];
 
                 // -------------------------
                 // Supabaseから山を取得
@@ -64,9 +87,10 @@ export default function MountainDetailPage() {
                 let imageUrl: string | null = null;
 
                 if (data.img_path) {
-                    const { data: imageData } = supabase.storage
-                        .from("img")
-                        .getPublicUrl(data.img_path);
+                    const { data: imageData } =
+                        supabase.storage
+                            .from("img")
+                            .getPublicUrl(data.img_path);
 
                     imageUrl = imageData.publicUrl;
                 }
@@ -80,9 +104,10 @@ export default function MountainDetailPage() {
                 let audioUrl: string | null = null;
 
                 if (data.audio_path) {
-                    const { data: audioData } = supabase.storage
-                        .from("audio")
-                        .getPublicUrl(data.audio_path);
+                    const { data: audioData } =
+                        supabase.storage
+                            .from("audio")
+                            .getPublicUrl(data.audio_path);
 
                     audioUrl = audioData.publicUrl;
                 }
@@ -106,6 +131,14 @@ export default function MountainDetailPage() {
                     data.analysis_data?.aiReview?.comment ?? "";
 
                 // -------------------------
+                // tag_idからタグを探す
+                // -------------------------
+
+                const tag = tags.find(
+                    (tag) => tag.id === data.tag_id
+                );
+
+                // -------------------------
                 // 山の情報をセット
                 // -------------------------
 
@@ -120,7 +153,9 @@ export default function MountainDetailPage() {
                     aiComment,
                     createdAt: data.created_at,
                     audioUrl,
-                    analysisResult: data.analysis_data ?? null,
+                    analysisResult:
+                        data.analysis_data ?? null,
+                    tagName: tag?.name ?? null,
                 });
             } catch (error) {
                 console.error(
@@ -197,10 +232,13 @@ export default function MountainDetailPage() {
         if (currentMountain.analysisResult) {
             localStorage.setItem(
                 "analysisResult",
-                JSON.stringify(currentMountain.analysisResult)
+                JSON.stringify(
+                    currentMountain.analysisResult
+                )
             );
         } else {
             localStorage.removeItem("analysisResult");
+
             console.error(
                 "解析結果が見つかりません:",
                 currentMountain
@@ -235,7 +273,11 @@ export default function MountainDetailPage() {
                                 onClick={openMountain}
                             />
                         ) : (
-                            <div className={styles.emptyThumbnail}>
+                            <div
+                                className={
+                                    styles.emptyThumbnail
+                                }
+                            >
                                 サムネイルがありません
                             </div>
                         )}
@@ -246,12 +288,23 @@ export default function MountainDetailPage() {
                             MOUNTAIN DETAIL
                         </p>
 
+                        {/* タグ */}
+                        {mountain.tagName && (
+                            <p className={styles.tag}>
+                                # {mountain.tagName}
+                            </p>
+                        )}
+
                         <h1 className={styles.title}>
                             {mountain.title}
                         </h1>
 
                         <div className={styles.aiReview}>
-                            <div className={styles.aiHeader}>
+                            <div
+                                className={
+                                    styles.aiHeader
+                                }
+                            >
                                 🤖 AI山評価
                             </div>
 
@@ -265,7 +318,11 @@ export default function MountainDetailPage() {
                         </div>
 
                         <div className={styles.commentBox}>
-                            <p className={styles.commentLabel}>
+                            <p
+                                className={
+                                    styles.commentLabel
+                                }
+                            >
                                 ひとこと
                             </p>
 
@@ -278,14 +335,20 @@ export default function MountainDetailPage() {
                         {/* 作った声 */}
                         {mountain.audioUrl && (
                             <div className={styles.audioBox}>
-                                <p className={styles.audioLabel}>
+                                <p
+                                    className={
+                                        styles.audioLabel
+                                    }
+                                >
                                     🎙️ この山を作った声
                                 </p>
 
                                 <audio
                                     controls
                                     src={mountain.audioUrl}
-                                    className={styles.audioPlayer}
+                                    className={
+                                        styles.audioPlayer
+                                    }
                                 />
                             </div>
                         )}
@@ -295,4 +358,3 @@ export default function MountainDetailPage() {
         </main>
     );
 }
-

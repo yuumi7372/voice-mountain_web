@@ -38,6 +38,7 @@
 
 .thumbnail {
     object-fit: contain;
+    cursor: pointer;
 }
 
 .emptyThumbnail {
@@ -64,6 +65,22 @@
     font-weight: 800;
 }
 
+/* =========================
+   タグ
+   ========================= */
+
+.tag {
+    display: inline-block;
+    width: fit-content;
+    margin: 0 0 10px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background-color: #edf3ea;
+    color: #6f9b6b;
+    font-size: 11px;
+    font-weight: 800;
+}
+
 .title {
     font-family: "WDXL Lubrifont JP N", sans-serif;
     margin: 0 0 22px;
@@ -74,7 +91,11 @@
 .aiReview {
     padding: 20px;
     border-radius: 22px;
-    background: linear-gradient(180deg, #f8fbff, #eef8ff);
+    background: linear-gradient(
+        180deg,
+        #f8fbff,
+        #eef8ff
+    );
     border: 2px solid #dcefff;
     margin-bottom: 18px;
 }

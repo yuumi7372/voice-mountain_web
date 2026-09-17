@@ -15,10 +15,17 @@ type MountainPost = {
   aiType: string;
   aiComment: string;
   createdAt: string;
+  tagName: string | null;
+};
+
+type Tag = {
+  id: string;
+  name: string;
 };
 
 export default function Home() {
   const router = useRouter();
+
   const [mountains, setMountains] = useState<MountainPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,38 +36,69 @@ export default function Home() {
   useEffect(() => {
     async function fetchMountains() {
       try {
-        const { data, error } = await supabase
-          .from("mountain")
-          .select("*")
-          .order("created_at", { ascending: false });
+        // =========================
+        // タグを取得
+        // =========================
 
-        if (error) {
-          throw error;
+        const { data: tagData, error: tagError } = await supabase
+          .from("tags")
+          .select("id, name");
+
+        if (tagError) {
+          throw tagError;
         }
 
-        const posts: MountainPost[] = (data ?? []).map((mountain) => {
-          let imageUrl: string | null = null;
+        const tags: Tag[] = tagData ?? [];
 
-          // img_pathがある場合、Storageの画像URLを取得
-          if (mountain.img_path) {
-            const { data: imageData } = supabase.storage
-              .from("img")
-              .getPublicUrl(mountain.img_path);
+        // =========================
+        // 山を取得
+        // =========================
 
-            imageUrl = imageData.publicUrl;
+        const { data: mountainData, error: mountainError } =
+          await supabase
+            .from("mountain")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (mountainError) {
+          throw mountainError;
+        }
+
+        // =========================
+        // 山データとタグを結びつける
+        // =========================
+
+        const posts: MountainPost[] = (mountainData ?? []).map(
+          (mountain) => {
+            let imageUrl: string | null = null;
+
+            // img_pathがある場合、Storageの画像URLを取得
+            if (mountain.img_path) {
+              const { data: imageData } = supabase.storage
+                .from("img")
+                .getPublicUrl(mountain.img_path);
+
+              imageUrl = imageData.publicUrl;
+            }
+
+            // tag_idからタグを探す
+            const tag = tags.find(
+              (tag) => tag.id === mountain.tag_id
+            );
+
+            return {
+              id: mountain.id,
+              title: mountain.name,
+              comment: mountain.comment ?? "",
+              image: imageUrl,
+              aiType: mountain.ai_type ?? "未分析",
+              aiComment:
+                mountain.analysis_data?.aiReview?.comment ?? "",
+              createdAt: mountain.created_at,
+              tagName: tag?.name ?? null,
+            };
           }
-
-          return {
-            id: mountain.id,
-            title: mountain.name,
-            comment: mountain.comment ?? "",
-            image: imageUrl,
-            aiType: mountain.ai_type ?? "未分析",
-            aiComment:
-              mountain.analysis_data?.aiReview?.comment ?? "",
-            createdAt: mountain.created_at,
-          };
-        });
+        );
 
         setMountains(posts);
       } catch (error) {
@@ -79,7 +117,11 @@ export default function Home() {
         <header className={styles.header}>
           <div>
             <p className={styles.label}>KOEKATA MOUNTAIN</p>
-            <h1 className={styles.title}>コエカタマウンテン</h1>
+
+            <h1 className={styles.title}>
+              コエカタマウンテン
+            </h1>
+
             <p className={styles.subtitle}>
               たった5秒で山ができる
             </p>
@@ -96,6 +138,7 @@ export default function Home() {
         {isLoading ? (
           <section className={styles.emptyArea}>
             <div className={styles.emptyIcon}>⛰️</div>
+
             <h2 className={styles.emptyTitle}>
               山を読み込んでいます
             </h2>
@@ -103,7 +146,11 @@ export default function Home() {
         ) : mountains.length === 0 ? (
           <section className={styles.emptyArea}>
             <div className={styles.emptyIcon}>⛰️</div>
-            <h2 className={styles.emptyTitle}>まだ山がありません</h2>
+
+            <h2 className={styles.emptyTitle}>
+              まだ山がありません
+            </h2>
+
             <p className={styles.emptyText}>
               最初の声の山を作ってみよう
             </p>
@@ -126,19 +173,31 @@ export default function Home() {
                       className={styles.thumbnail}
                     />
                   ) : (
-                    <span className={styles.mountainIcon}>⛰️</span>
+                    <span className={styles.mountainIcon}>
+                      ⛰️
+                    </span>
                   )}
                 </div>
 
                 <div className={styles.cardBody}>
+                  {/* タグ */}
+                  {mountain.tagName && (
+                    <p className={styles.tag}>
+                      # {mountain.tagName}
+                    </p>
+                  )}
+
+                  {/* AI診断 */}
                   <p className={styles.aiType}>
                     🤖 {mountain.aiType}
                   </p>
 
+                  {/* 山の名前 */}
                   <h2 className={styles.cardTitle}>
                     {mountain.title}
                   </h2>
 
+                  {/* コメント */}
                   <p className={styles.comment}>
                     {mountain.comment}
                   </p>

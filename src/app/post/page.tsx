@@ -7,6 +7,11 @@ import background from "../../components/background.module.css";
 import styles from "./page.module.css";
 import { supabase } from "../../lib/supabase";
 
+type Tag = {
+    id: string;
+    name: string;
+};
+
 export default function PostPage() {
     const [thumbnail, setThumbnail] = useState<string | null>(null);
     const router = useRouter();
@@ -19,6 +24,10 @@ export default function PostPage() {
     const [mountainName, setMountainName] = useState("");
     const [comment, setComment] = useState("");
     const [isPosting, setIsPosting] = useState(false);
+
+    // タグ
+    const [tags, setTags] = useState<Tag[]>([]);
+    const [selectedTagId, setSelectedTagId] = useState("");
 
     useEffect(() => {
         const savedThumbnail = localStorage.getItem("thumbnail");
@@ -35,8 +44,36 @@ export default function PostPage() {
         setAiReview(createAiReview(waveData, pitchData));
     }, []);
 
-    function createAiReview(waveData: number[], pitchData: number[]) {
-        if (waveData.length === 0 || pitchData.length === 0) {
+    // タグ候補をSupabaseから取得
+    useEffect(() => {
+        async function fetchTags() {
+            const { data, error } = await supabase
+                .from("tags")
+                .select("id, name")
+                .order("name", { ascending: true });
+
+            if (error) {
+                console.error(
+                    "タグの取得に失敗しました:",
+                    error
+                );
+                return;
+            }
+
+            setTags(data ?? []);
+        }
+
+        fetchTags();
+    }, []);
+
+    function createAiReview(
+        waveData: number[],
+        pitchData: number[]
+    ) {
+        if (
+            waveData.length === 0 ||
+            pitchData.length === 0
+        ) {
             return {
                 type: "未分析の山",
                 comment:
@@ -45,17 +82,23 @@ export default function PostPage() {
         }
 
         const avgVolume =
-            waveData.reduce((sum, value) => sum + value, 0) /
-            waveData.length;
+            waveData.reduce(
+                (sum, value) => sum + value,
+                0
+            ) / waveData.length;
 
         const maxVolume = Math.max(...waveData);
 
-        const validPitchData = pitchData.filter((pitch) => pitch > 0);
+        const validPitchData = pitchData.filter(
+            (pitch) => pitch > 0
+        );
 
         const avgPitch =
             validPitchData.length > 0
-                ? validPitchData.reduce((sum, value) => sum + value, 0) /
-                  validPitchData.length
+                ? validPitchData.reduce(
+                      (sum, value) => sum + value,
+                      0
+                  ) / validPitchData.length
                 : 0;
 
         if (maxVolume > 0.8 && avgPitch > 500) {
@@ -91,16 +134,25 @@ export default function PostPage() {
 
     // Base64形式のデータをBlobに変換する
     function dataUrlToBlob(dataUrl: string): Blob {
-        const [header, base64] = dataUrl.split(",");
+        const [header, base64] =
+            dataUrl.split(",");
 
         const mimeType =
-            header.match(/data:(.*?);/)?.[1] || "application/octet-stream";
+            header.match(/data:(.*?);/)?.[1] ||
+            "application/octet-stream";
 
         const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
+        const bytes = new Uint8Array(
+            binary.length
+        );
 
-        for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i);
+        for (
+            let i = 0;
+            i < binary.length;
+            i++
+        ) {
+            bytes[i] =
+                binary.charCodeAt(i);
         }
 
         return new Blob([bytes], {
@@ -126,40 +178,67 @@ export default function PostPage() {
             // -------------------------
 
             const waveData = JSON.parse(
-                localStorage.getItem("waveData") || "[]"
+                localStorage.getItem(
+                    "waveData"
+                ) || "[]"
             ) as number[];
 
             const pitchData = JSON.parse(
-                localStorage.getItem("pitchData") || "[]"
+                localStorage.getItem(
+                    "pitchData"
+                ) || "[]"
             ) as number[];
 
-            const analysisResult = JSON.parse(
-                localStorage.getItem("analysisResult") || "{}"
-            );
+            const analysisResult =
+                JSON.parse(
+                    localStorage.getItem(
+                        "analysisResult"
+                    ) || "{}"
+                );
 
-            const savedThumbnail = localStorage.getItem("thumbnail");
-            const savedAudio = localStorage.getItem("audioData");
+            const savedThumbnail =
+                localStorage.getItem(
+                    "thumbnail"
+                );
+
+            const savedAudio =
+                localStorage.getItem(
+                    "audioData"
+                );
 
             // 投稿ごとのファイル名に使うID
-            const uploadId = crypto.randomUUID();
+            const uploadId =
+                crypto.randomUUID();
 
             // -------------------------
             // サムネイルをStorageへ保存
             // -------------------------
 
-            let thumbnailPath: string | null = null;
+            let thumbnailPath:
+                | string
+                | null = null;
 
             if (savedThumbnail) {
-                const thumbnailBlob = dataUrlToBlob(savedThumbnail);
+                const thumbnailBlob =
+                    dataUrlToBlob(
+                        savedThumbnail
+                    );
 
                 thumbnailPath = `${uploadId}.png`;
 
-                const { error: thumbnailError } = await supabase.storage
+                const {
+                    error: thumbnailError,
+                } = await supabase.storage
                     .from("img")
-                    .upload(thumbnailPath, thumbnailBlob, {
-                        contentType: "image/png",
-                        upsert: false,
-                    });
+                    .upload(
+                        thumbnailPath,
+                        thumbnailBlob,
+                        {
+                            contentType:
+                                "image/png",
+                            upsert: false,
+                        }
+                    );
 
                 if (thumbnailError) {
                     throw new Error(
@@ -172,19 +251,31 @@ export default function PostPage() {
             // 音声をStorageへ保存
             // -------------------------
 
-            let audioPath: string | null = null;
+            let audioPath:
+                | string
+                | null = null;
 
             if (savedAudio) {
-                const audioBlob = dataUrlToBlob(savedAudio);
+                const audioBlob =
+                    dataUrlToBlob(
+                        savedAudio
+                    );
 
                 audioPath = `${uploadId}.wav`;
 
-                const { error: audioError } = await supabase.storage
+                const {
+                    error: audioError,
+                } = await supabase.storage
                     .from("audio")
-                    .upload(audioPath, audioBlob, {
-                        contentType: "audio/wav",
-                        upsert: false,
-                    });
+                    .upload(
+                        audioPath,
+                        audioBlob,
+                        {
+                            contentType:
+                                "audio/wav",
+                            upsert: false,
+                        }
+                    );
 
                 if (audioError) {
                     throw new Error(
@@ -197,35 +288,46 @@ export default function PostPage() {
             // mountainテーブルへ保存
             // -------------------------
 
-            const { error: mountainError } = await supabase
-                .from("mountain")
-                .insert({
-                    // tag_idは現在まだ使わない
-                    tag_id: null,
+            const { error: mountainError } =
+                await supabase
+                    .from("mountain")
+                    .insert({
+                        // タグを選択していなければnull
+                        tag_id:
+                            selectedTagId || null,
 
-                    name: mountainName.trim(),
+                        name:
+                            mountainName.trim(),
 
-                    comment: comment.trim(),
+                        comment:
+                            comment.trim(),
 
-                    ai_type: aiReview.type,
+                        ai_type:
+                            aiReview.type,
 
-                    audio_path: audioPath,
+                        audio_path:
+                            audioPath,
 
-                    img_path: thumbnailPath,
+                        img_path:
+                            thumbnailPath,
 
-                    analysis_data: {
-                        ...analysisResult,
-                        aiReview: {
-                            type: aiReview.type,
-                            comment: aiReview.comment,
+                        analysis_data: {
+                            ...analysisResult,
+                            aiReview: {
+                                type:
+                                    aiReview.type,
+                                comment:
+                                    aiReview.comment,
+                            },
                         },
-                    },
 
-                    mountain_data: {
-                        waveData: waveData,
-                        pitchData: pitchData,
-                    },
-                });
+                        mountain_data: {
+                            waveData:
+                                waveData,
+                            pitchData:
+                                pitchData,
+                        },
+                    });
 
             if (mountainError) {
                 throw new Error(
@@ -237,16 +339,27 @@ export default function PostPage() {
             // 投稿成功
             // -------------------------
 
-            alert("山を投稿したよ！⛰️");
+            alert(
+                "山を投稿したよ！⛰️"
+            );
 
             router.push("/");
         } catch (error) {
-            console.error("投稿エラー:", error);
+            console.error(
+                "投稿エラー:",
+                error
+            );
 
-            if (error instanceof Error) {
-                alert(`投稿に失敗しました。\n${error.message}`);
+            if (
+                error instanceof Error
+            ) {
+                alert(
+                    `投稿に失敗しました。\n${error.message}`
+                );
             } else {
-                alert("投稿に失敗しました。");
+                alert(
+                    "投稿に失敗しました。"
+                );
             }
         } finally {
             setIsPosting(false);
@@ -254,73 +367,212 @@ export default function PostPage() {
     }
 
     return (
-        <main className={background.container}>
-            <section className={styles.card}>
-                <div className={styles.header}>
-                    <p className={styles.label}>POST MOUNTAIN</p>
-                    <h1 className={styles.title}>山を投稿する</h1>
-                    <p className={styles.description}>
+        <main
+            className={
+                background.container
+            }
+        >
+            <section
+                className={styles.card}
+            >
+                <div
+                    className={
+                        styles.header
+                    }
+                >
+                    <p
+                        className={
+                            styles.label
+                        }
+                    >
+                        POST MOUNTAIN
+                    </p>
+
+                    <h1
+                        className={
+                            styles.title
+                        }
+                    >
+                        山を投稿する
+                    </h1>
+
+                    <p
+                        className={
+                            styles.description
+                        }
+                    >
                         作った山に名前とコメントをつけて保存しよう
                     </p>
                 </div>
 
-                <div className={styles.content}>
-                    <div className={styles.previewArea}>
+                <div
+                    className={
+                        styles.content
+                    }
+                >
+                    <div
+                        className={
+                            styles.previewArea
+                        }
+                    >
                         {thumbnail ? (
                             <img
-                                src={thumbnail}
+                                src={
+                                    thumbnail
+                                }
                                 alt="生成した山のサムネイル"
-                                className={styles.thumbnail}
+                                className={
+                                    styles.thumbnail
+                                }
                                 onClick={() =>
-                                    router.push("/create_mountain/result")
+                                    router.push(
+                                        "/create_mountain/result"
+                                    )
                                 }
                             />
                         ) : (
-                            <div className={styles.emptyThumbnail}>
+                            <div
+                                className={
+                                    styles.emptyThumbnail
+                                }
+                            >
                                 サムネイルがありません
                             </div>
                         )}
 
-                        <div className={styles.aiReview}>
-                            <div className={styles.aiHeader}>
+                        <div
+                            className={
+                                styles.aiReview
+                            }
+                        >
+                            <div
+                                className={
+                                    styles.aiHeader
+                                }
+                            >
                                 🤖 AI山評価
                             </div>
 
-                            <p className={styles.aiTitle}>
-                                {aiReview.type}
+                            <p
+                                className={
+                                    styles.aiTitle
+                                }
+                            >
+                                {
+                                    aiReview.type
+                                }
                             </p>
 
-                            <p className={styles.aiComment}>
-                                {aiReview.comment}
+                            <p
+                                className={
+                                    styles.aiComment
+                                }
+                            >
+                                {
+                                    aiReview.comment
+                                }
                             </p>
                         </div>
                     </div>
 
-                    <div className={styles.formArea}>
+                    <div
+                        className={
+                            styles.formArea
+                        }
+                    >
                         <input
-                            className={styles.input}
+                            className={
+                                styles.input
+                            }
                             placeholder="山の名前"
-                            value={mountainName}
-                            onChange={(e) =>
-                                setMountainName(e.target.value)
+                            value={
+                                mountainName
+                            }
+                            onChange={(
+                                e
+                            ) =>
+                                setMountainName(
+                                    e.target.value
+                                )
                             }
                         />
 
                         <textarea
-                            className={styles.textarea}
+                            className={
+                                styles.textarea
+                            }
                             placeholder="ひとことコメント"
                             value={comment}
-                            onChange={(e) =>
-                                setComment(e.target.value)
+                            onChange={(
+                                e
+                            ) =>
+                                setComment(
+                                    e.target.value
+                                )
                             }
                         />
 
-                        <button
-                            className={styles.postButton}
-                            onClick={handlePost}
-                            disabled={isPosting}
+                        <div
+                            className={
+                                styles.tagArea
+                            }
                         >
-                            {isPosting ? "投稿中..." : "投稿する"}
+
+                            <select
+                                className={
+                                    styles.tagSelect
+                                }
+                                value={
+                                    selectedTagId
+                                }
+                                onChange={(
+                                    e
+                                ) =>
+                                    setSelectedTagId(
+                                        e.target
+                                            .value
+                                    )
+                                }
+                            >
+                                <option value="">
+                                    タグを選択しない
+                                </option>
+
+                                {tags.map(
+                                    (
+                                        tag
+                                    ) => (
+                                        <option
+                                            key={
+                                                tag.id
+                                            }
+                                            value={
+                                                tag.id
+                                            }
+                                        >
+                                            {
+                                                tag.name
+                                            }
+                                        </option>
+                                    )
+                                )}
+                            </select>
+                        </div>
+
+                        <button
+                            className={
+                                styles.postButton
+                            }
+                            onClick={
+                                handlePost
+                            }
+                            disabled={
+                                isPosting
+                            }
+                        >
+                            {isPosting
+                                ? "投稿中..."
+                                : "投稿する"}
                         </button>
                     </div>
                 </div>

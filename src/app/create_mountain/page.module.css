@@ -69,6 +69,18 @@
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.button:not(:disabled):hover {
+    transform: translateY(-1px);
+}
+
+.button:not(:disabled):active {
+    transform: translateY(0);
 }
 
 .primaryButton {
@@ -81,11 +93,28 @@
     color: #3d5a45;
 }
 
+.secondaryButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .createButton {
     margin-top: 8px;
     background-color: #ffd966;
     color: #4d3b00;
     box-shadow: 0 8px 18px rgba(255, 217, 102, 0.45);
+}
+
+.createButtonDisabled {
+    background-color: #e2e2e2;
+    color: #999999;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.createButtonDisabled:hover {
+    transform: none;
 }
 
 .visualizer {

@@ -3,16 +3,19 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import styles from "./page.module.css"
+import styles from "./page.module.css";
 import background from "../../components/background.module.css";
 
 let isEncoderRegistered = false;
 
 export default function CreateMountain() {
     const [isRecording, setIsRecording] = useState(false);
-    const router = useRouter();
-    const streamRef = useRef<MediaStream | null>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
 
+    const router = useRouter();
+
+    const streamRef = useRef<MediaStream | null>(null);
     const mediaRecorderRef = useRef<any>(null);
 
     const waveDataRef = useRef<number[]>([]);
@@ -29,19 +32,30 @@ export default function CreateMountain() {
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const chunksRef = useRef<Blob[]>([]);
 
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-
     async function startRecording() {
+        // 新しく録音すると、前回の解析結果は無効にする
+        setIsAnalysisComplete(false);
+        setIsAnalyzing(false);
+
         setAudioUrl(null);
         chunksRef.current = [];
         setVisualData([]);
         setRecordingProgress(0);
+
         waveDataRef.current = [];
         pitchDataRef.current = [];
 
-        //await register(await connect());
-        const {MediaRecorder, register} = await import("extendable-media-recorder");
-        const {connect} = await import("extendable-media-recorder-wav-encoder");
+        // 前回の解析結果を削除
+        localStorage.removeItem("analysisResult");
+
+        const { MediaRecorder, register } = await import(
+            "extendable-media-recorder"
+        );
+
+        const { connect } = await import(
+            "extendable-media-recorder-wav-encoder"
+        );
+
         if (!isEncoderRegistered) {
             await register(await connect());
             isEncoderRegistered = true;
@@ -55,13 +69,16 @@ export default function CreateMountain() {
 
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
-        const source = audioContext.createMediaStreamSource(stream);
+
+        const source =
+            audioContext.createMediaStreamSource(stream);
 
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 2048;
+
         source.connect(analyser);
         analyserRef.current = analyser;
-        
+
         const recorder = new MediaRecorder(stream, {
             mimeType: "audio/wav",
         });
@@ -78,46 +95,85 @@ export default function CreateMountain() {
             const url = URL.createObjectURL(audioBlob);
             setAudioUrl(url);
 
+            // -----------------
             // 録音音声をBase64にしてlocalStorageへ保存
+            // -----------------
+
             const reader = new FileReader();
 
             reader.onloadend = () => {
-                const base64Audio = reader.result as string;
+                const base64Audio =
+                    reader.result as string;
 
-                localStorage.setItem("audioData", base64Audio);
+                localStorage.setItem(
+                    "audioData",
+                    base64Audio
+                );
 
-                console.log("音声データを保存しました");
+                console.log(
+                    "音声データを保存しました"
+                );
             };
 
             reader.readAsDataURL(audioBlob);
 
-            // バックエンド(Flask)に送信するためのFormDataを作成
+            // -----------------
+            // バックエンドへ送信
+            // -----------------
+
             const formData = new FormData();
-            formData.append("audio", audioBlob, "voice_test.wav");
+
+            formData.append(
+                "audio",
+                audioBlob,
+                "voice_test.wav"
+            );
 
             try {
-                const response = await fetch("http://localhost:5000/upload", {
-                    method: "POST",
-                    body: formData
-                });
+                const response = await fetch(
+                    "http://localhost:5000/upload",
+                    {
+                        method: "POST",
+                        body: formData,
+                    }
+                );
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(
+                        `HTTP error! status: ${response.status}`
+                    );
                 }
 
                 const data = await response.json();
-                console.log("Flask解析結果:", data);
 
-                // 結果ページで使えるように解析結果を保存
+                console.log(
+                    "Flask解析結果:",
+                    data
+                );
+
+                // -----------------
+                // 解析結果を保存
+                // -----------------
+
                 localStorage.setItem(
                     "analysisResult",
                     JSON.stringify(data)
                 );
+
+                // 解析完了
+                setIsAnalysisComplete(true);
             } catch (error) {
-                console.error("バックエンド通信エラー：", error);
+                console.error(
+                    "バックエンド通信エラー：",
+                    error
+                );
+
                 alert(
                     "音声の解析に失敗しました。バックエンドが起動しているか確認してください。"
                 );
+
+                // 解析失敗時は生成できない
+                setIsAnalysisComplete(false);
             } finally {
                 setIsAnalyzing(false);
             }
@@ -144,23 +200,38 @@ export default function CreateMountain() {
 
             let volume = 0;
 
-            for (let i = 0; i < timeData.length; i++) {
+            for (
+                let i = 0;
+                i < timeData.length;
+                i++
+            ) {
                 volume = Math.max(
                     volume,
                     Math.abs(timeData[i] - 128)
                 );
             }
-            const normalizedVolume = volume / 128;
 
-            waveDataRef.current.push(normalizedVolume);
+            const normalizedVolume =
+                volume / 128;
+
+            waveDataRef.current.push(
+                normalizedVolume
+            );
 
             setVisualData((prev) => {
-                const next = [...prev, normalizedVolume];
+                const next = [
+                    ...prev,
+                    normalizedVolume,
+                ];
+
                 return next.slice(-50);
             });
 
             setRecordingProgress(
-                Math.min(waveDataRef.current.length / 50, 1)
+                Math.min(
+                    waveDataRef.current.length / 50,
+                    1
+                )
             );
 
             // -----------------
@@ -171,33 +242,53 @@ export default function CreateMountain() {
                 analyser.frequencyBinCount
             );
 
-            analyser.getByteFrequencyData(freqData);
+            analyser.getByteFrequencyData(
+                freqData
+            );
 
-            const sampleRate = audioContext.sampleRate;
+            const sampleRate =
+                audioContext.sampleRate;
 
             const minFreq = 80;
             const maxFreq = 1200;
 
-            const minIndex = Math.floor(minFreq * analyser.fftSize / sampleRate);
+            const minIndex = Math.floor(
+                (minFreq * analyser.fftSize) /
+                    sampleRate
+            );
 
-            const maxIndex = Math.floor(maxFreq * analyser.fftSize / sampleRate);
+            const maxIndex = Math.floor(
+                (maxFreq * analyser.fftSize) /
+                    sampleRate
+            );
 
             let strongestIndex = minIndex;
             let strongestValue = 0;
 
-            for (let i = minIndex; i <= maxIndex; i++) {
-                if (freqData[i] > strongestValue) {
-                    strongestValue = freqData[i];
+            for (
+                let i = minIndex;
+                i <= maxIndex;
+                i++
+            ) {
+                if (
+                    freqData[i] >
+                    strongestValue
+                ) {
+                    strongestValue =
+                        freqData[i];
+
                     strongestIndex = i;
                 }
             }
 
             const dominantFrequency =
-                strongestIndex *
-                sampleRate /
+                (strongestIndex *
+                    sampleRate) /
                 analyser.fftSize;
 
-            pitchDataRef.current.push(dominantFrequency);
+            pitchDataRef.current.push(
+                dominantFrequency
+            );
         }, 100);
 
         mediaRecorderRef.current = recorder;
@@ -210,55 +301,99 @@ export default function CreateMountain() {
     }
 
     function stopRecording() {
-        //インターバルをクリアして録音を停止する
+        // -----------------
+        // 解析中状態にする
+        // -----------------
+
+        setIsAnalyzing(true);
+        setIsAnalysisComplete(false);
+
+        // -----------------
+        // インターバルをクリア
+        // -----------------
+
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
 
-        // MediaRecorderを停止する
+        // -----------------
+        // MediaRecorderを停止
+        // -----------------
+
         mediaRecorderRef.current?.stop();
 
-        //マイクを停止する
-        streamRef.current?.getTracks().forEach((track) => {
-            track.stop();
-        });
+        // -----------------
+        // マイクを停止
+        // -----------------
+
+        streamRef.current
+            ?.getTracks()
+            .forEach((track) => {
+                track.stop();
+            });
 
         streamRef.current = null;
 
-        //AudioContextを閉じる
+        // -----------------
+        // AudioContextを閉じる
+        // -----------------
+
         audioContextRef.current?.close();
         audioContextRef.current = null;
 
-        //UIを録音終了状態に更新する
+        // -----------------
+        // UIを録音終了状態に更新
+        // -----------------
+
         setIsRecording(false);
     }
 
     function createMountain() {
+        // 解析が完了していない場合は何もしない
+        if (
+            isAnalyzing ||
+            !isAnalysisComplete
+        ) {
+            return;
+        }
+
         localStorage.setItem(
             "waveData",
-            JSON.stringify(waveDataRef.current)
+            JSON.stringify(
+                waveDataRef.current
+            )
         );
 
         localStorage.setItem(
             "pitchData",
-            JSON.stringify(pitchDataRef.current)
+            JSON.stringify(
+                pitchDataRef.current
+            )
         );
 
-        router.push("/create_mountain/result");
+        router.push(
+            "/create_mountain/result"
+        );
     }
+
+    const isCreateDisabled =
+        isAnalyzing ||
+        !isAnalysisComplete;
 
     return (
         <main className={background.container}>
             <section className={styles.card}>
-                <p className={styles.label}>CREATE MOUNTAIN</p>
+                <p className={styles.label}>
+                    CREATE MOUNTAIN
+                </p>
 
                 <h1 className={styles.title}>
                     声で山をつくる
                 </h1>
 
                 <p className={styles.description}>
-                    5秒間声を録音すると、音量と高さから
+                    5秒間声を録音すると、<br></br>
                     あなただけの山フィールドを生成します。
                 </p>
 
@@ -266,57 +401,100 @@ export default function CreateMountain() {
                     <div
                         className={styles.statusDot}
                         style={{
-                            backgroundColor: isRecording ? "#ff5a5a" : "#d9d9d9",
+                            backgroundColor:
+                                isRecording
+                                    ? "#ff5a5a"
+                                    : "#d9d9d9",
                         }}
                     />
 
-                    <span className={styles.statusText}>
-                        {isRecording ? "録音中..." : "録音待機中"}
+                    <span
+                        className={styles.statusText}
+                    >
+                        {isRecording
+                            ? "録音中..."
+                            : isAnalyzing
+                            ? "解析中..."
+                            : isAnalysisComplete
+                            ? "解析完了！"
+                            : "録音待機中"}
                     </span>
                 </div>
 
                 <div className={styles.visualizer}>
-                    {Array.from({ length: 50 }).map((_, index) => {
-                        const value = visualData[index] ?? 0;
+                    {Array.from({
+                        length: 50,
+                    }).map((_, index) => {
+                        const value =
+                            visualData[index] ??
+                            0;
 
                         return (
                             <div
                                 key={index}
-                                className={styles.visualBar}
+                                className={
+                                    styles.visualBar
+                                }
                                 style={{
-                                    height: `${8 + value * 70}px`,
-                                    opacity: isRecording || value > 0 ? 1 : 0.25,
+                                    height: `${
+                                        8 +
+                                        value * 70
+                                    }px`,
+                                    opacity:
+                                        isRecording ||
+                                        value > 0
+                                            ? 1
+                                            : 0.25,
                                 }}
                             />
                         );
                     })}
                 </div>
 
-                <div className={styles.progressTrack}>
+                <div
+                    className={
+                        styles.progressTrack
+                    }
+                >
                     <div
-                        className={styles.progressBar}
+                        className={
+                            styles.progressBar
+                        }
                         style={{
-                            width: `${recordingProgress * 100}%`,
+                            width: `${
+                                recordingProgress *
+                                100
+                            }%`,
                         }}
                     />
                 </div>
 
-                <div className={styles.buttonArea}>
+                <div
+                    className={
+                        styles.buttonArea
+                    }
+                >
                     <button
-                        onClick={startRecording}
-                        disabled={isRecording}
+                        onClick={
+                            startRecording
+                        }
+                        disabled={
+                            isRecording ||
+                            isAnalyzing
+                        }
                         className={`${styles.button} ${styles.primaryButton}`}
                     >
                         録音開始
                     </button>
 
                     <button
-                        onClick={stopRecording}
-                        disabled={!isRecording}
+                        onClick={
+                            stopRecording
+                        }
+                        disabled={
+                            !isRecording
+                        }
                         className={`${styles.button} ${styles.secondaryButton}`}
-                        style={{
-                            opacity: !isRecording ? 0.5 : 1,
-                        }}
                     >
                         録音停止
                     </button>
@@ -331,14 +509,23 @@ export default function CreateMountain() {
                 )}
 
                 <button
-                    onClick={createMountain}
-                    disabled={isAnalyzing}
-                    className={`${styles.button} ${styles.createButton}`}
+                    onClick={
+                        createMountain
+                    }
+                    disabled={
+                        isCreateDisabled
+                    }
+                    className={`${styles.button} ${styles.createButton} ${
+                        isCreateDisabled
+                            ? styles.createButtonDisabled
+                            : ""
+                    }`}
                 >
                     {isAnalyzing
                         ? "解析中..."
-                        : "山を生成する"
-                    }
+                        : !isAnalysisComplete
+                        ? "🎙️ まず録音してみよう！"
+                        : "山を生成する"}
                 </button>
             </section>
         </main>
