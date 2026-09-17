@@ -13,7 +13,9 @@ type Tag = {
 };
 
 export default function PostPage() {
-    const [thumbnail, setThumbnail] = useState<string | null>(null);
+    const [thumbnail, setThumbnail] =
+        useState<string | null>(null);
+
     const router = useRouter();
 
     const [aiReview, setAiReview] = useState({
@@ -21,42 +23,65 @@ export default function PostPage() {
         comment: "声の山を読み取っています。",
     });
 
-    const [mountainName, setMountainName] = useState("");
-    const [comment, setComment] = useState("");
-    const [isPosting, setIsPosting] = useState(false);
+    const [mountainName, setMountainName] =
+        useState("");
 
-    // タグ
-    const [tags, setTags] = useState<Tag[]>([]);
-    const [selectedTagId, setSelectedTagId] = useState("");
+    const [comment, setComment] =
+        useState("");
+
+    const [isPosting, setIsPosting] =
+        useState(false);
+
+    const [tags, setTags] =
+        useState<Tag[]>([]);
+
+    const [selectedTagId, setSelectedTagId] =
+        useState("");
 
     useEffect(() => {
-        const savedThumbnail = localStorage.getItem("thumbnail");
+        const savedThumbnail =
+            localStorage.getItem(
+                "thumbnail"
+            );
+
         setThumbnail(savedThumbnail);
 
-        const waveData = JSON.parse(
-            localStorage.getItem("waveData") || "[]"
-        ) as number[];
+        const analysisResult =
+            JSON.parse(
+                localStorage.getItem(
+                    "analysisResult"
+                ) || "{}"
+            );
 
-        const pitchData = JSON.parse(
-            localStorage.getItem("pitchData") || "[]"
-        ) as number[];
-
-        setAiReview(createAiReview(waveData, pitchData));
+        setAiReview(
+            createAiReview(
+                analysisResult
+            )
+        );
     }, []);
 
-    // タグ候補をSupabaseから取得
+    // -------------------------
+    // タグ取得
+    // -------------------------
+
     useEffect(() => {
         async function fetchTags() {
-            const { data, error } = await supabase
+            const {
+                data,
+                error,
+            } = await supabase
                 .from("tags")
                 .select("id, name")
-                .order("name", { ascending: true });
+                .order("name", {
+                    ascending: true,
+                });
 
             if (error) {
                 console.error(
                     "タグの取得に失敗しました:",
                     error
                 );
+
                 return;
             }
 
@@ -66,12 +91,18 @@ export default function PostPage() {
         fetchTags();
     }, []);
 
+    // -------------------------
+    // AIレビュー
+    // -------------------------
+
     function createAiReview(
-        waveData: number[],
-        pitchData: number[]
+        analysisResult: any
     ) {
+        const pitchData =
+            analysisResult?.pitch_data ??
+            [];
+
         if (
-            waveData.length === 0 ||
             pitchData.length === 0
         ) {
             return {
@@ -81,70 +112,101 @@ export default function PostPage() {
             };
         }
 
-        const avgVolume =
-            waveData.reduce(
-                (sum, value) => sum + value,
-                0
-            ) / waveData.length;
+        const validPitchData =
+            pitchData.filter(
+                (pitch: any) =>
+                    typeof pitch.frequency ===
+                        "number" &&
+                    pitch.frequency > 0
+            );
 
-        const maxVolume = Math.max(...waveData);
-
-        const validPitchData = pitchData.filter(
-            (pitch) => pitch > 0
-        );
+        if (
+            validPitchData.length === 0
+        ) {
+            return {
+                type: "未分析の山",
+                comment:
+                    "音程を検出できなかったため、山の評価はまだできません。",
+            };
+        }
 
         const avgPitch =
-            validPitchData.length > 0
-                ? validPitchData.reduce(
-                      (sum, value) => sum + value,
-                      0
-                  ) / validPitchData.length
-                : 0;
+            validPitchData.reduce(
+                (
+                    sum: number,
+                    pitch: any
+                ) =>
+                    sum +
+                    pitch.frequency,
+                0
+            ) /
+            validPitchData.length;
 
-        if (maxVolume > 0.8 && avgPitch > 500) {
+        const maxVolume =
+            Math.max(
+                ...validPitchData.map(
+                    (pitch: any) =>
+                        pitch.volume
+                )
+            );
+
+        if (
+            maxVolume > -10 &&
+            avgPitch > 500
+        ) {
             return {
-                type: "そびえ立つ高音峰型",
+                type:
+                    "そびえ立つ高音峰型",
                 comment:
                     "力強い声と高めの音が反映され、鋭く高い山が生まれました。勢いのある発声が山の迫力につながっています。",
             };
         }
 
-        if (avgVolume > 0.45) {
+        if (
+            avgPitch > 400
+        ) {
             return {
-                type: "ダイナミック山脈型",
-                comment:
-                    "声の大きさに変化があり、起伏のある山になっています。感情の動きや声の強弱が地形に表れています。",
-            };
-        }
-
-        if (avgPitch > 400) {
-            return {
-                type: "きらめき高原型",
+                type:
+                    "きらめき高原型",
                 comment:
                     "比較的高めの声が反映され、明るく軽やかな印象の山になっています。山全体に澄んだ雰囲気があります。",
             };
         }
 
         return {
-            type: "おだやか渓谷型",
+            type:
+                "おだやか渓谷型",
             comment:
                 "高低差が少なく、なだらかな地形が広がっています。落ち着いた話し方や安定した発声が反映された山かもしれません。",
         };
     }
 
-    // Base64形式のデータをBlobに変換する
-    function dataUrlToBlob(dataUrl: string): Blob {
-        const [header, base64] =
+    // -------------------------
+    // Data URL → Blob
+    // -------------------------
+
+    function dataUrlToBlob(
+        dataUrl: string
+    ): Blob {
+        const [
+            header,
+            base64,
+        ] =
             dataUrl.split(",");
 
         const mimeType =
-            header.match(/data:(.*?);/)?.[1] ||
+            header.match(
+                /data:(.*?);/
+            )?.[1] ||
             "application/octet-stream";
 
-        const binary = atob(base64);
-        const bytes = new Uint8Array(
-            binary.length
-        );
+        const binary =
+            atob(base64);
+
+        const bytes =
+            new Uint8Array(
+                binary.length
+            );
 
         for (
             let i = 0;
@@ -155,14 +217,26 @@ export default function PostPage() {
                 binary.charCodeAt(i);
         }
 
-        return new Blob([bytes], {
-            type: mimeType,
-        });
+        return new Blob(
+            [bytes],
+            {
+                type: mimeType,
+            }
+        );
     }
 
+    // -------------------------
+    // 投稿
+    // -------------------------
+
     async function handlePost() {
-        if (!mountainName.trim()) {
-            alert("山の名前を入力してね");
+        if (
+            !mountainName.trim()
+        ) {
+            alert(
+                "山の名前を入力してね"
+            );
+
             return;
         }
 
@@ -174,20 +248,8 @@ export default function PostPage() {
 
         try {
             // -------------------------
-            // localStorageからデータ取得
+            // localStorageから取得
             // -------------------------
-
-            const waveData = JSON.parse(
-                localStorage.getItem(
-                    "waveData"
-                ) || "[]"
-            ) as number[];
-
-            const pitchData = JSON.parse(
-                localStorage.getItem(
-                    "pitchData"
-                ) || "[]"
-            ) as number[];
 
             const analysisResult =
                 JSON.parse(
@@ -206,41 +268,67 @@ export default function PostPage() {
                     "audioData"
                 );
 
-            // 投稿ごとのファイル名に使うID
+            const savedMountain =
+                localStorage.getItem(
+                    "mountainGLB"
+                );
+
+            // -------------------------
+            // 山GLBチェック
+            // -------------------------
+
+            if (!savedMountain) {
+                throw new Error(
+                    "生成した山の3Dデータが見つかりません。山の生成ページに戻って、もう一度生成してね。"
+                );
+            }
+
+            // -------------------------
+            // 投稿ID
+            // -------------------------
+
             const uploadId =
                 crypto.randomUUID();
 
             // -------------------------
-            // サムネイルをStorageへ保存
+            // サムネイル
             // -------------------------
 
             let thumbnailPath:
                 | string
                 | null = null;
 
-            if (savedThumbnail) {
+            if (
+                savedThumbnail
+            ) {
                 const thumbnailBlob =
                     dataUrlToBlob(
                         savedThumbnail
                     );
 
-                thumbnailPath = `${uploadId}.png`;
+                thumbnailPath =
+                    `${uploadId}.png`;
 
                 const {
-                    error: thumbnailError,
-                } = await supabase.storage
-                    .from("img")
-                    .upload(
-                        thumbnailPath,
-                        thumbnailBlob,
-                        {
-                            contentType:
-                                "image/png",
-                            upsert: false,
-                        }
-                    );
+                    error:
+                        thumbnailError,
+                } =
+                    await supabase.storage
+                        .from("img")
+                        .upload(
+                            thumbnailPath,
+                            thumbnailBlob,
+                            {
+                                contentType:
+                                    "image/png",
+                                upsert:
+                                    false,
+                            }
+                        );
 
-                if (thumbnailError) {
+                if (
+                    thumbnailError
+                ) {
                     throw new Error(
                         `サムネイルのアップロードに失敗しました: ${thumbnailError.message}`
                     );
@@ -248,36 +336,44 @@ export default function PostPage() {
             }
 
             // -------------------------
-            // 音声をStorageへ保存
+            // 音声
             // -------------------------
 
             let audioPath:
                 | string
                 | null = null;
 
-            if (savedAudio) {
+            if (
+                savedAudio
+            ) {
                 const audioBlob =
                     dataUrlToBlob(
                         savedAudio
                     );
 
-                audioPath = `${uploadId}.wav`;
+                audioPath =
+                    `${uploadId}.wav`;
 
                 const {
-                    error: audioError,
-                } = await supabase.storage
-                    .from("audio")
-                    .upload(
-                        audioPath,
-                        audioBlob,
-                        {
-                            contentType:
-                                "audio/wav",
-                            upsert: false,
-                        }
-                    );
+                    error:
+                        audioError,
+                } =
+                    await supabase.storage
+                        .from("audio")
+                        .upload(
+                            audioPath,
+                            audioBlob,
+                            {
+                                contentType:
+                                    "audio/wav",
+                                upsert:
+                                    false,
+                            }
+                        );
 
-                if (audioError) {
+                if (
+                    audioError
+                ) {
                     throw new Error(
                         `音声のアップロードに失敗しました: ${audioError.message}`
                     );
@@ -285,16 +381,56 @@ export default function PostPage() {
             }
 
             // -------------------------
-            // mountainテーブルへ保存
+            // 3D山
             // -------------------------
 
-            const { error: mountainError } =
+            const mountainBlob =
+                dataUrlToBlob(
+                    savedMountain
+                );
+
+            const mountainPath =
+                `${uploadId}.glb`;
+
+            const {
+                error:
+                    mountainError,
+            } =
+                await supabase.storage
+                    .from("mountain")
+                    .upload(
+                        mountainPath,
+                        mountainBlob,
+                        {
+                            contentType:
+                                "model/gltf-binary",
+                            upsert:
+                                false,
+                        }
+                    );
+
+            if (
+                mountainError
+            ) {
+                throw new Error(
+                    `3D山データのアップロードに失敗しました: ${mountainError.message}`
+                );
+            }
+
+            // -------------------------
+            // DBへ保存
+            // -------------------------
+
+            const {
+                error:
+                    databaseError,
+            } =
                 await supabase
                     .from("mountain")
                     .insert({
-                        // タグを選択していなければnull
                         tag_id:
-                            selectedTagId || null,
+                            selectedTagId ||
+                            null,
 
                         name:
                             mountainName.trim(),
@@ -311,27 +447,27 @@ export default function PostPage() {
                         img_path:
                             thumbnailPath,
 
+                        mountain_path:
+                            mountainPath,
+
                         analysis_data: {
                             ...analysisResult,
+
                             aiReview: {
                                 type:
                                     aiReview.type,
+
                                 comment:
                                     aiReview.comment,
                             },
                         },
-
-                        mountain_data: {
-                            waveData:
-                                waveData,
-                            pitchData:
-                                pitchData,
-                        },
                     });
 
-            if (mountainError) {
+            if (
+                databaseError
+            ) {
                 throw new Error(
-                    `山データの保存に失敗しました: ${mountainError.message}`
+                    `山データの保存に失敗しました: ${databaseError.message}`
                 );
             }
 
@@ -339,11 +475,21 @@ export default function PostPage() {
             // 投稿成功
             // -------------------------
 
+            // 一時データを削除
+            localStorage.removeItem("mountainGLB");
+            localStorage.removeItem("analysisResult");
+            localStorage.removeItem("thumbnail");
+            localStorage.removeItem("audioData");
+            localStorage.removeItem("waveData");
+            localStorage.removeItem("pitchData");
+
             alert(
                 "山を投稿したよ！⛰️"
             );
 
-            router.push("/");
+            router.push(
+                "/"
+            );
         } catch (error) {
             console.error(
                 "投稿エラー:",
@@ -362,7 +508,9 @@ export default function PostPage() {
                 );
             }
         } finally {
-            setIsPosting(false);
+            setIsPosting(
+                false
+            );
         }
     }
 
@@ -373,7 +521,9 @@ export default function PostPage() {
             }
         >
             <section
-                className={styles.card}
+                className={
+                    styles.card
+                }
             >
                 <div
                     className={
@@ -502,7 +652,9 @@ export default function PostPage() {
                                 styles.textarea
                             }
                             placeholder="ひとことコメント"
-                            value={comment}
+                            value={
+                                comment
+                            }
                             onChange={(
                                 e
                             ) =>
@@ -517,7 +669,6 @@ export default function PostPage() {
                                 styles.tagArea
                             }
                         >
-
                             <select
                                 className={
                                     styles.tagSelect
@@ -529,8 +680,7 @@ export default function PostPage() {
                                     e
                                 ) =>
                                     setSelectedTagId(
-                                        e.target
-                                            .value
+                                        e.target.value
                                     )
                                 }
                             >
