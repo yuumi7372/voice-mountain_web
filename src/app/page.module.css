@@ -121,12 +121,21 @@
     margin: 0 0 8px;
     font-size: 22px;
     color: #2f4f35;
+
+    /* 長すぎるタイトルは1行で省略 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .comment {
     margin: 0;
     font-size: 14px;
     color: #607566;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .emptyArea {
