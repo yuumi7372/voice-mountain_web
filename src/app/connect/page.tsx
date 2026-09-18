@@ -1,3 +1,4 @@
+// ./connect/page.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -6,7 +7,6 @@ import { Canvas, useLoader, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as THREE from "three";
-
 import styles from "./page.module.css";
 import background from "../../components/background.module.css";
 import { supabase } from "../../lib/supabase";
