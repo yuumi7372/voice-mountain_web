@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Canvas, useLoader, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as THREE from "three";
@@ -54,6 +54,58 @@ function MountainModel({
         .getPublicUrl(path);
         
     const gltf = useLoader(GLTFLoader, data.publicUrl);
+
+    const animationStartRef =
+        useRef<number | null>(null);
+
+    const animationFinishedRef =
+        useRef(false);
+
+    useEffect(() => {
+        animationStartRef.current = null;
+        animationFinishedRef.current = false;
+
+        gltf.scene.scale.y = 0;
+    }, [path, gltf.scene]);
+
+    useFrame((state) => {
+        if (animationFinishedRef.current) {
+            return;
+        }
+
+        if (animationStartRef.current === null) {
+            animationStartRef.current =
+                state.clock.elapsedTime;
+        }
+
+        const duration = 2.0;
+
+        const elapsed =
+            state.clock.elapsedTime -
+            animationStartRef.current;
+
+        const rawProgress =
+            THREE.MathUtils.clamp(
+                elapsed / duration,
+                0,
+                1
+            );
+
+        // MountainCanvasと同じeaseOutCubic
+        const progress =
+            1 -
+            Math.pow(
+                1 - rawProgress,
+                3
+            );
+
+        gltf.scene.scale.y = progress;
+
+        if (rawProgress >= 1) {
+            gltf.scene.scale.y = 1;
+            animationFinishedRef.current = true;
+        }
+    });
 
     return (
         <primitive
@@ -154,7 +206,7 @@ function ConnectedMountains({
         >
             {mountains.map((mountain, index) => (
                 <MountainModel
-                    key={mountain.id}
+                    key={`${mountain.id}-${index}`}
                     path={mountain.mountain_path}
                     x={positions[index]}
                 />
@@ -356,8 +408,8 @@ export default function ConnectPage() {
                                     camera={{
                                         position: [
                                             0,
-                                            100,
-                                            300,
+                                            50,
+                                            150,
                                         ],
                                         fov: 45,
                                     }}
@@ -401,9 +453,9 @@ export default function ConnectPage() {
 
                     <div className={styles.textArea}>
                         <div>
-                            {mountains.map((mountain) => (
+                            {mountains.map((mountain, index) => (
                                 <p
-                                    key={mountain.id}
+                                    key={`${mountain.id}-${index}`}
                                     className={styles.placeholderText}
                                 >
                                     {mountain.word}
@@ -424,13 +476,13 @@ export default function ConnectPage() {
 
                     <div className={styles.audioArea}>
                         <div>
-                            {mountains.map((mountain) => {
+                            {mountains.map((mountain, index) => {
                                 const { data } = supabase.storage
                                     .from("audio")
                                     .getPublicUrl(mountain.audio_path);
 
                                 return (
-                                    <div key={mountain.id}>
+                                    <div key={`${mountain.id}-${index}`}>
                                         <span>
                                             {mountain.tagLabel}
                                         </span>

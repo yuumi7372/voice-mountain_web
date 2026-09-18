@@ -99,12 +99,9 @@ export default function PostPage() {
         analysisResult: any
     ) {
         const pitchData =
-            analysisResult?.pitch_data ??
-            [];
+            analysisResult?.pitch_data ?? [];
 
-        if (
-            pitchData.length === 0
-        ) {
+        if (pitchData.length === 0) {
             return {
                 type: "未分析の山",
                 comment:
@@ -112,17 +109,18 @@ export default function PostPage() {
             };
         }
 
+        // -------------------------
+        // 有効なデータだけ取り出す
+        // -------------------------
+
         const validPitchData =
             pitchData.filter(
                 (pitch: any) =>
-                    typeof pitch.frequency ===
-                        "number" &&
+                    typeof pitch.frequency === "number" &&
                     pitch.frequency > 0
             );
 
-        if (
-            validPitchData.length === 0
-        ) {
+        if (validPitchData.length === 0) {
             return {
                 type: "未分析の山",
                 comment:
@@ -130,54 +128,264 @@ export default function PostPage() {
             };
         }
 
-        const avgPitch =
-            validPitchData.reduce(
-                (
-                    sum: number,
-                    pitch: any
-                ) =>
-                    sum +
-                    pitch.frequency,
-                0
-            ) /
-            validPitchData.length;
+        // -------------------------
+        // 基本値を計算
+        // -------------------------
 
-        const maxVolume =
-            Math.max(
-                ...validPitchData.map(
-                    (pitch: any) =>
-                        pitch.volume
-                )
+        const frequencies =
+            validPitchData.map(
+                (pitch: any) => pitch.frequency
             );
 
+        const volumes =
+            validPitchData
+                .map(
+                    (pitch: any) => pitch.volume
+                )
+                .filter(
+                    (volume: any) =>
+                        typeof volume === "number"
+                );
+
+        const brightnessValues =
+            validPitchData
+                .map(
+                    (pitch: any) =>
+                        pitch.brightness
+                )
+                .filter(
+                    (value: any) =>
+                        typeof value === "number"
+                );
+
+        const warmthValues =
+            validPitchData
+                .map(
+                    (pitch: any) =>
+                        pitch.warmth
+                )
+                .filter(
+                    (value: any) =>
+                        typeof value === "number"
+                );
+
+        // 平均値を求める
+        const average = (
+            values: number[]
+        ) =>
+            values.length > 0
+                ? values.reduce(
+                    (
+                        sum,
+                        value
+                    ) =>
+                        sum + value,
+                    0
+                ) /
+                values.length
+                : 0;
+
+        const avgFrequency =
+            average(frequencies);
+
+        const minFrequency =
+            Math.min(...frequencies);
+
+        const maxFrequency =
+            Math.max(...frequencies);
+
+        const frequencyRange =
+            maxFrequency -
+            minFrequency;
+
+        const avgVolume =
+            average(volumes);
+
+        const maxVolume =
+            volumes.length > 0
+                ? Math.max(...volumes)
+                : 0;
+
+        const avgBrightness =
+            average(
+                brightnessValues
+            );
+
+        const avgWarmth =
+            average(
+                warmthValues
+            );
+
+        const harmonicRichness =
+            typeof analysisResult?.harmonic_richness ===
+                "number"
+                ? analysisResult.harmonic_richness
+                : null;
+
+        // -------------------------
+        // 山の特徴を判定
+        // -------------------------
+
+        let type = "";
+
+        /*
+        * 周波数の幅が大きい
+        * → 高低差のある山
+        */
         if (
-            maxVolume > -10 &&
-            avgPitch > 500
+            frequencyRange >= 300
         ) {
-            return {
-                type:
-                    "そびえ立つ高音峰型",
-                comment:
-                    "力強い声と高めの音が反映され、鋭く高い山が生まれました。勢いのある発声が山の迫力につながっています。",
-            };
+            type =
+                "起伏のある大地形";
         }
 
-        if (
-            avgPitch > 400
+        /*
+        * 周波数の幅が小さく、
+        * かつ明るさが高い
+        * → なだらかで明るい山
+        */
+        else if (
+            frequencyRange < 80 &&
+            avgBrightness >= 70
         ) {
-            return {
-                type:
-                    "きらめき高原型",
-                comment:
-                    "比較的高めの声が反映され、明るく軽やかな印象の山になっています。山全体に澄んだ雰囲気があります。",
-            };
+            type =
+                "きらめき高原型";
         }
+
+        /*
+        * 周波数が高め
+        * → 高い山
+        */
+        else if (
+            maxFrequency >= 500
+        ) {
+            type =
+                "そびえ立つ高峰型";
+        }
+
+        /*
+        * 倍音が豊富
+        * → 響きのある山
+        */
+        else if (
+            harmonicRichness !== null &&
+            harmonicRichness >= 80
+        ) {
+            type =
+                "響きの峰型";
+        }
+
+        /*
+        * 暖かさが高い
+        * → 暖かい色の山
+        */
+        else if (
+            avgWarmth >= 60
+        ) {
+            type =
+                "あたたか森林型";
+        }
+
+        /*
+        * その他
+        */
+        else {
+            type =
+                "おだやかな山並み型";
+        }
+
+        // -------------------------
+        // 診断コメントを組み立てる
+        // -------------------------
+
+        const heightComment =
+            `最高周波数は${maxFrequency.toFixed(
+                1
+            )}Hz、最低周波数は${minFrequency.toFixed(
+                1
+            )}Hzで、約${frequencyRange.toFixed(
+                1
+            )}Hzの音域が含まれていました。`;
+
+        let terrainComment = "";
+
+        if (
+            frequencyRange >= 300
+        ) {
+            terrainComment =
+                "広い音域を行き来する声だったため、高低差の大きな起伏のある地形として表れています。";
+        } else if (
+            frequencyRange < 80
+        ) {
+            terrainComment =
+                "音域の変化が比較的小さいため、山の高低差も穏やかで、なだらかな地形になっています。";
+        } else {
+            terrainComment =
+                "ある程度の音域の変化があり、山にもほどよい高低差が生まれています。";
+        }
+
+        const brightnessComment =
+            `Brightnessの平均は${avgBrightness.toFixed(
+                1
+            )}で、${avgBrightness >= 70
+                ? "明るい音の成分が多く含まれていました。"
+                : "比較的落ち着いた明るさの音でした。"
+            }`;
+
+        const warmthComment =
+            `Warmthの平均は${avgWarmth.toFixed(
+                1
+            )}で、${avgWarmth >= 60
+                ? "暖かみのある音色が強く表れています。"
+                : avgWarmth >= 35
+                    ? "ほどよい暖かさを持った音色です。"
+                    : "すっきりとした音色が特徴的です。"
+            }`;
+
+        let harmonicComment = "";
+
+        if (
+            harmonicRichness !== null
+        ) {
+            harmonicComment =
+                `倍音の豊かさは${harmonicRichness.toFixed(
+                    1
+                )}で、${harmonicRichness >= 80
+                    ? "豊かな倍音を含んだ、響きのある声でした。"
+                    : harmonicRichness >= 50
+                        ? "ある程度の倍音を含んだ声でした。"
+                        : "倍音成分は比較的少なめでした。"
+                }`;
+        }
+
+        const volumeComment =
+            `平均音量は${avgVolume.toFixed(
+                1
+            )}dB、最大音量は${maxVolume.toFixed(
+                1
+            )}dBでした。`;
+
+        // -------------------------
+        // 最終コメント
+        // -------------------------
+
+        const comment =
+            `${heightComment}
+        ${terrainComment}
+
+        ${brightnessComment}
+        ${warmthComment}
+
+        ${volumeComment}${harmonicComment
+                ? `\n${harmonicComment}`
+                : ""
+            }
+
+        声の高さや音色の特徴が、それぞれ山の高さ・色・地形として表れています。`;
 
         return {
-            type:
-                "おだやか渓谷型",
-            comment:
-                "高低差が少なく、なだらかな地形が広がっています。落ち着いた話し方や安定した発声が反映された山かもしれません。",
+            type,
+            comment,
         };
     }
 
@@ -311,7 +519,7 @@ export default function PostPage() {
 
                 const {
                     error:
-                        thumbnailError,
+                    thumbnailError,
                 } =
                     await supabase.storage
                         .from("img")
@@ -356,7 +564,7 @@ export default function PostPage() {
 
                 const {
                     error:
-                        audioError,
+                    audioError,
                 } =
                     await supabase.storage
                         .from("audio")
@@ -394,7 +602,7 @@ export default function PostPage() {
 
             const {
                 error:
-                    mountainError,
+                mountainError,
             } =
                 await supabase.storage
                     .from("mountain")
@@ -423,7 +631,7 @@ export default function PostPage() {
 
             const {
                 error:
-                    databaseError,
+                databaseError,
             } =
                 await supabase
                     .from("mountain")
