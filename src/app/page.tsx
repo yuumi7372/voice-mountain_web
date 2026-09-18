@@ -112,7 +112,6 @@ export default function Home() {
 
           <div className={styles.headerButtons}>
             <button className={styles.connectMountainButton} onClick={gotoConnectMountainPage}>🏔️ 山を繋げる</button>
-            <button className={styles.createMountainButton} onClick={gotoCreateMountainPage}>+ 山を作る</button>
           </div>
         </header>
 
